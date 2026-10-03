@@ -1,0 +1,171 @@
+name: Build IPA
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      signing:
+        description: "Режим сборки: signed (по умолчанию, нужны Secrets) или unsigned (без секретов)"
+        type: choice
+        options:
+          - signed
+          - unsigned
+        default: unsigned
+
+permissions:
+  contents: write
+
+env:
+  # push всегда идёт в unsigned (без Secrets); ручной запуск — по input, по умолчанию signed
+  SIGNING_MODE: ${{ inputs.signing || 'unsigned' }}
+  KEYCHAIN_PATH: ${{ runner.temp }}/app-signing.keychain-db
+
+jobs:
+  build:
+    name: Build AppleWalletClone.ipa
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: "Select Xcode 16.2 (fallback — любой Xcode 16.x)"
+        run: |
+          for XCODE_APP in /Applications/Xcode_16.2.app /Applications/Xcode_16*.app; do
+            if [ -d "$XCODE_APP" ]; then
+              echo "Selected $XCODE_APP"
+              sudo xcode-select -s "$XCODE_APP"
+              break
+            fi
+          done
+          xcodebuild -version
+          swift --version
+
+      - name: Install XcodeGen
+        run: |
+          command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+          xcodegen --version
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Import signing certificate (signed only)
+        if: env.SIGNING_MODE == 'signed'
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+      - name: Install provisioning profile (signed only)
+        if: env.SIGNING_MODE == 'signed'
+        env:
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          PP_PATH="$RUNNER_TEMP/build_pp.mobileprovision"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o "$PP_PATH"
+          UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< "$(security cms -D -i "$PP_PATH")" 2>/dev/null || true)
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin <<< "$(security cms -D -i "$PP_PATH")" 2>/dev/null || true)
+          test -n "$PROFILE_NAME"
+          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+          if [ -n "$UUID" ]; then
+            cp "$PP_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
+          else
+            cp "$PP_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/"
+          fi
+          echo "Provisioning profile: $PROFILE_NAME (UUID: ${UUID:-unknown})"
+
+      - name: Archive app (signed only)
+        if: env.SIGNING_MODE == 'signed'
+        env:
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+        run: |
+          set -euo pipefail
+          xcodebuild archive \
+            -project AppleWalletClone.xcodeproj \
+            -scheme AppleWalletClone \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/App.xcarchive \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Development" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME"
+
+      - name: Export .ipa (signed only)
+        if: env.SIGNING_MODE == 'signed'
+        env:
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+        run: |
+          set -euo pipefail
+          sed -e "s|TEAM_ID_PLACEHOLDER|$TEAM_ID|" \
+              -e "s|PROFILE_NAME_PLACEHOLDER|$PROFILE_NAME|" \
+              Config/ExportOptions-Development.plist > build/ExportOptions.plist
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist build/ExportOptions.plist
+          IPA_PATH=$(find build/ipa -name '*.ipa' | head -n 1)
+          test -n "$IPA_PATH"
+          cp "$IPA_PATH" AppleWalletClone.ipa
+
+      - name: Build for iOS device (unsigned)
+        if: env.SIGNING_MODE == 'unsigned'
+        run: |
+          xcodebuild build \
+            -project AppleWalletClone.xcodeproj \
+            -scheme AppleWalletClone \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Package .ipa (unsigned)
+        if: env.SIGNING_MODE == 'unsigned'
+        run: |
+          rm -rf Payload
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/AppleWalletClone.app Payload/
+          zip -qry AppleWalletClone.ipa Payload
+
+      - name: Verify .ipa structure
+        run: |
+          test -f AppleWalletClone.ipa
+          unzip -l AppleWalletClone.ipa
+          du -h AppleWalletClone.ipa
+
+      - name: Upload .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: AppleWalletClone-ipa
+          path: AppleWalletClone.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Attach .ipa to Release (push в main)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          files: AppleWalletClone.ipa
+          generate_release_notes: true
+
+      - name: Cleanup signing material
+        if: always()
+        run: |
+          security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/build_certificate.p12" "$RUNNER_TEMP/build_pp.mobileprovision"
+          rm -rf "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision 2>/dev/null || true
