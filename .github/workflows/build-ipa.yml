@@ -29,17 +29,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: "Select Xcode 16.2 (fallback — любой Xcode 16.x)"
+      - name: "Select Xcode 16.4 (нужен рантайм-пейринг; иначе дефолт раннера)"
         run: |
-          for XCODE_APP in /Applications/Xcode_16.2.app /Applications/Xcode_16*.app; do
-            if [ -d "$XCODE_APP" ]; then
-              echo "Selected $XCODE_APP"
-              sudo xcode-select -s "$XCODE_APP"
-              break
-            fi
-          done
+          # На маковых раннерах аккумуляторы рантаймов сокращены: actool падает,
+          # если SDK выбранного Xcode не имеет парного iOS Simulator runtime.
+          # Xcode 16.4 (iOS 18.5, 22F76) паруется с установленным рантаймом 22F77.
+          if [ -d /Applications/Xcode_16.4.app ]; then
+            sudo xcode-select -s /Applications/Xcode_16.4.app
+            echo "Selected /Applications/Xcode_16.4.app"
+          fi
           xcodebuild -version
           swift --version
+          xcrun simctl list runtimes || true
 
       - name: Install XcodeGen
         run: |
