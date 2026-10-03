@@ -19,7 +19,6 @@ permissions:
 env:
   # push всегда идёт в unsigned (без Secrets); ручной запуск — по input, по умолчанию signed
   SIGNING_MODE: ${{ inputs.signing || 'unsigned' }}
-  KEYCHAIN_PATH: ${{ runner.temp }}/app-signing.keychain-db
 
 jobs:
   build:
@@ -56,6 +55,7 @@ jobs:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          KEYCHAIN_PATH: ${{ runner.temp }}/app-signing.keychain-db
         run: |
           set -euo pipefail
           CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
@@ -165,6 +165,8 @@ jobs:
 
       - name: Cleanup signing material
         if: always()
+        env:
+          KEYCHAIN_PATH: ${{ runner.temp }}/app-signing.keychain-db
         run: |
           security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
           rm -f "$RUNNER_TEMP/build_certificate.p12" "$RUNNER_TEMP/build_pp.mobileprovision"
