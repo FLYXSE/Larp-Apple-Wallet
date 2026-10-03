@@ -1,0 +1,21 @@
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# XcodeGen генерирует проект — в репозиторий не коммитим
+*.xcodeproj
+*.xcworkspace
+
+# SPM
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
