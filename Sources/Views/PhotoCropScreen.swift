@@ -182,8 +182,8 @@ struct PhotoCropScreen: View {
 
         let halfW: CGFloat = cropSize.width / 2
         let halfH: CGFloat = cropSize.height / 2
-        let originX: CGFloat = (displayWidth / 2 - halfW - offset.x) / factor
-        let originY: CGFloat = (displayHeight / 2 - halfH - offset.y) / factor
+        let originX: CGFloat = (displayWidth / 2 - halfW - offset.width) / factor
+        let originY: CGFloat = (displayHeight / 2 - halfH - offset.height) / factor
 
         let cropInPoints = CGRect(
             x: originX,
