@@ -2,9 +2,9 @@ import SwiftUI
 import UIKit
 
 /// Шторка оплаты в духе скриншотов Apple Pay:
-/// светлая/системная тема, крупная карта сверху в цвете карты,
-/// в центре Face ID / «Поднесите к считывателю», снизу — стопка карт.
-/// Без баннеров «Демонстрация» и без суммы на экране оплаты.
+/// карта вверху в цвете/фото карты, в центре Face ID / «Поднесите к считывателю».
+/// Подсказка «Дважды нажмите для оплаты» — у кнопки питания (справа сверху).
+/// Без баннеров, суммы, кнопки «Закрыть» и стопки карт внизу.
 struct ApplePaySheet: View {
     let cardID: UUID?
     let onDismiss: () -> Void
@@ -28,7 +28,6 @@ struct ApplePaySheet: View {
                 }
 
                 VStack(spacing: 0) {
-                    // Карта крупно вверху — цвет/фото из настроек карты.
                     if let card = selectedCard {
                         payCardFace(card: card)
                             .frame(maxWidth: 300)
@@ -51,22 +50,16 @@ struct ApplePaySheet: View {
                         .padding(.horizontal, 24)
 
                     Spacer(minLength: 12)
-
-                    // Стопка карт снизу, как на скриншоте Apple Pay.
-                    bottomCardPeek
-                        .frame(height: 90)
-                        .clipped()
                 }
 
-                // Реплика боковой кнопки справа (двойное нажатие).
+                // Подсказка у кнопки питания (правый верх, как Side/Power).
                 if case .awaitingDoublePress = flow.stage {
                     VStack {
-                        Spacer()
                         HStack {
                             Spacer()
                             VStack(alignment: .trailing, spacing: 10) {
                                 Text("Дважды нажмите\nдля оплаты")
-                                    .font(.system(size: 17, weight: .semibold))
+                                    .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.primary)
                                     .multilineTextAlignment(.trailing)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -76,31 +69,11 @@ struct ApplePaySheet: View {
                                 }
                             }
                         }
-                        .padding(.trailing, 18)
-                        .padding(.bottom, geo.size.height * 0.38)
-                    }
-                }
+                        .padding(.trailing, 14)
+                        .padding(.top, max(geo.safeAreaInsets.top + 56, geo.size.height * 0.16))
 
-                // Закрыть — тонкая кнопка в углу, без большого баннера.
-                VStack {
-                    HStack {
-                        Spacer()
-                        Button {
-                            cancel()
-                        } label: {
-                            Text("Закрыть")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(Color(hex: "0A84FF"))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(Color(hex: "0A84FF").opacity(0.10))
-                                .clipShape(Capsule())
-                        }
-                        .accessibilityLabel("Закрыть оплату")
+                        Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    Spacer()
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
@@ -111,7 +84,6 @@ struct ApplePaySheet: View {
         }
         .simultaneousGesture(dismissGesture)
         .animation(.easeInOut(duration: 0.28), value: flow.stage)
-        // Тема оплаты — как на iPhone (система/светлая/тёмная).
         .preferredColorScheme(settings.colorScheme)
     }
 
@@ -133,7 +105,6 @@ struct ApplePaySheet: View {
                 }
             }
 
-            // Лёгкий скрим для читаемости — только снизу, не «зелёный» фильтр.
             LinearGradient(
                 stops: [
                     .init(color: .clear, location: 0.35),
@@ -267,49 +238,9 @@ struct ApplePaySheet: View {
             }
 
         case .idle, .awaitingDoublePress:
-            VStack(spacing: 16) {
-                AppIcon(name: .sideButton, size: 40, color: Color(hex: "0A84FF"))
-                Text("Подтвердите боковой кнопкой")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(Color(hex: "8E8E93"))
-                    .multilineTextAlignment(.center)
-                Text("Дважды нажмите справа от экрана")
-                    .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "AEAEB2"))
-            }
+            // Подсказка «Дважды нажмите для оплаты» — у кнопки питания (не здесь).
+            EmptyView()
         }
-    }
-
-    // MARK: - Стопка карт снизу
-
-    private var bottomCardPeek: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 0)
-            ZStack(alignment: .top) {
-                ForEach(Array(store.cards.prefix(4).enumerated()), id: \.element.id) { index, card in
-                    Group {
-                        if let path = card.coverImagePath, let image = ImageStore.load(relativePath: path) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFill()
-                        } else {
-                            LinearGradient(
-                                colors: card.gradientColors.map { Color(hex: $0) },
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        }
-                    }
-                    .frame(width: 220, height: 28)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .offset(y: CGFloat(index) * 10)
-                    .opacity(index == 0 ? 0.35 : 0.55)
-                    .zIndex(Double(store.cards.count - index))
-                }
-            }
-            .frame(width: 220, height: 70)
-        }
-        .padding(.bottom, 8)
     }
 
     // MARK: - Управление

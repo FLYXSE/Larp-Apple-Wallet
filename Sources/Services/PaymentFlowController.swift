@@ -223,6 +223,7 @@ final class PaymentFlowController: ObservableObject {
         teardownSensorsAndTimers()
         stage = .success
         Haptics.success()
+        PaymentSound.playSuccessChime()
 
         if let cardID = selectedCardID, let store = store {
             store.recordPayment(
