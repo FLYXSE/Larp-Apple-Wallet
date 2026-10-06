@@ -10,7 +10,7 @@ struct AppleWalletCloneApp: App {
             WalletHome()
                 .environmentObject(store)
                 .environmentObject(settings)
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(settings.colorScheme)
                 .tint(Color(hex: "0A84FF"))
         }
     }

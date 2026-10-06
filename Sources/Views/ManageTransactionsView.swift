@@ -22,14 +22,14 @@ struct ManageTransactionsView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Операции")
                         .font(.system(size: 34, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                         .padding(.horizontal, 16)
                         .padding(.top, 4)
 
                     Text("СВОИ")
                         .font(.system(size: 13, weight: .semibold))
                         .tracking(0.8)
-                        .foregroundColor(Color(hex: "8E8E93"))
+                        .foregroundColor(.secondary)
                         .padding(.horizontal, 16)
 
                     transactionCard
@@ -38,7 +38,7 @@ struct ManageTransactionsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color.black.ignoresSafeArea())
+        .background(Color(uiColor: .systemBackground).ignoresSafeArea())
         .alert("Добавить операцию", isPresented: $showAdd) {
             Button("ОК", role: .cancel) {}
         } message: {
@@ -98,20 +98,20 @@ struct ManageTransactionsView: View {
 
                     if transaction.id != card.transactions.last?.id {
                         Rectangle()
-                            .fill(Color(hex: "262629"))
+                            .fill(Color.primary.opacity(0.10))
                             .frame(height: 0.5)
                             .padding(.leading, 56)
                     }
                 }
             }
             .padding(.vertical, 4)
-            .background(Color(hex: "1C1C1E"))
+            .background(Color(uiColor: .secondarySystemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .padding(.horizontal, 16)
         } else {
             Text("Операций пока нет")
                 .font(.system(size: 16))
-                .foregroundColor(Color(hex: "636368"))
+                .foregroundColor(.secondary)
                 .padding(.horizontal, 16)
         }
     }

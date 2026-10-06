@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Плавающая кнопка оплаты (правый нижний угол).
 struct PayButton: View {
@@ -16,20 +17,20 @@ struct PayButton: View {
                     Circle()
                         .stroke(Color.white.opacity(0.22), lineWidth: 1)
                 )
-                .shadow(color: Color(hex: "0A84FF").opacity(0.55), radius: 16, x: 0, y: 8)
+                .shadow(color: Color(hex: "0A84FF").opacity(0.45), radius: 14, x: 0, y: 6)
         }
         .accessibilityLabel("Оплатить")
         .accessibilityHint("Открывает симуляцию Apple Pay")
     }
 
     private var buttonBackground: some View {
-        ZStack {
-            Circle()
-                .fill(Color(hex: "0A84FF").opacity(0.95))
-            Circle()
-                .fill(Color.white.opacity(0.10))
-                .background(.ultraThinMaterial)
-                .clipShape(Circle())
-        }
+        LinearGradient(
+            colors: [
+                Color(hex: "0A84FF"),
+                Color(hex: "0057B8")
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 }

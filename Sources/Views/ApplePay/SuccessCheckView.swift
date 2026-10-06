@@ -1,20 +1,23 @@
 import SwiftUI
+import UIKit
 
-/// Успешная оплата: зелёный круг с галкой (§7.5).
+/// Успешная оплата: зелёный круг с галкой (системная геометрия SF).
 struct SuccessCheckView: View {
+    var size: CGFloat = 64
+
     @State private var appeared = false
 
     var body: some View {
         ZStack {
             Circle()
                 .fill(Color(hex: "30D158"))
-                .frame(width: 64, height: 64)
+                .frame(width: size, height: size)
 
             Image(systemName: "checkmark")
-                .font(.system(size: 28, weight: .bold))
+                .font(.system(size: size * 0.42, weight: .bold))
                 .foregroundColor(.white)
         }
-        .frame(width: 64, height: 64)
+        .frame(width: size, height: size)
         .scaleEffect(appeared ? 1.0 : 0.6)
         .opacity(appeared ? 1 : 0)
         .onAppear {

@@ -1,60 +1,27 @@
 import SwiftUI
+import UIKit
 
-/// Глиф Face ID: скруглённый квадрат с viewfinder-уголками и сканирующей линией.
+/// Глиф Face ID — системный SF Symbol (правильная геометрия, как на скриншотах).
 struct FaceIDGlyphView: View {
-    var animateScanLine: Bool = true
+    var animateScanLine: Bool = false
+    var size: CGFloat = 56
+    var color: Color = Color(hex: "0A84FF")
 
-    @State private var lineTravelled = false
+    @State private var pulsing = false
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.white, lineWidth: 3)
-                .frame(width: 64, height: 64)
-
-            ZStack {
-                brackets
-
-                if animateScanLine {
-                    RoundedRectangle(cornerRadius: 1, style: .continuous)
-                        .fill(Color.white)
-                        .frame(width: 42, height: 2)
-                        .offset(y: lineTravelled ? 21 : -21)
-                        .opacity(lineTravelled ? 0.25 : 1)
+        Image(systemName: "faceid")
+            .font(.system(size: size, weight: .regular))
+            .foregroundColor(color)
+            .frame(width: size + 16, height: size + 16)
+            .scaleEffect(pulsing && animateScanLine ? 1.06 : 1.0)
+            .opacity(pulsing && animateScanLine ? 0.85 : 1)
+            .onAppear {
+                guard animateScanLine else { return }
+                withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) {
+                    pulsing = true
                 }
             }
-            .frame(width: 64, height: 64)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        }
-        .frame(width: 64, height: 64)
-        .onAppear {
-            guard animateScanLine else { return }
-            withAnimation(.easeInOut(duration: 1.2)) {
-                lineTravelled = true
-            }
-        }
-        .accessibilityLabel("Проверка лица")
-    }
-
-    private var brackets: some View {
-        ZStack {
-            bracket(.topLeading)
-            bracket(.topTrailing)
-            bracket(.bottomLeading)
-            bracket(.bottomTrailing)
-        }
-        .frame(width: 44, height: 44)
-    }
-
-    private func bracket(_ alignment: Alignment) -> some View {
-        ZStack(alignment: alignment) {
-            Rectangle()
-                .fill(Color.white)
-                .frame(width: 12, height: 3)
-            Rectangle()
-                .fill(Color.white)
-                .frame(width: 3, height: 12)
-        }
-        .frame(width: 44, height: 44)
+            .accessibilityLabel("Face ID")
     }
 }

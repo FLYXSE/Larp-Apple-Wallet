@@ -14,10 +14,10 @@ struct SideButtonReplica: View {
             handleTap()
         } label: {
             RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(Color.white.opacity(glow ? 1.0 : (isPressed ? 0.85 : 0.45)))
+                .fill(Color.primary.opacity(glow ? 1.0 : (isPressed ? 0.85 : 0.40)))
                 .frame(width: 4, height: 60)
                 .shadow(
-                    color: Color.white.opacity(glow ? 0.85 : 0),
+                    color: Color(hex: "0A84FF").opacity(glow ? 0.7 : 0),
                     radius: glow ? 10 : 0
                 )
                 .frame(width: 44, height: 76, alignment: .trailing)
@@ -88,7 +88,7 @@ struct DoublePressHintView: View {
             DoubleTapIndicator()
             Text(text)
                 .font(.system(size: 17))
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -105,7 +105,7 @@ private struct DoubleTapIndicator: View {
         HStack(spacing: 8) {
             ForEach(0..<2, id: \.self) { index in
                 Circle()
-                    .fill(Color.white.opacity(flash ? 0.95 : 0.22))
+                    .fill(Color(hex: "0A84FF").opacity(flash ? 0.95 : 0.25))
                     .frame(width: 8, height: 8)
                     .animation(
                         .easeInOut(duration: 0.5)

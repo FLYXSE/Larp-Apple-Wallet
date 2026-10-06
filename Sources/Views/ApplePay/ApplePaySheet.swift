@@ -1,10 +1,10 @@
 import SwiftUI
+import UIKit
 
-/// Полноэкранная симуляция оплаты под скриншот Apple Pay (Liquid Glass).
-/// Верх: синий баннер «Демонстрация Apple Pay» + кнопка «Завершить».
-/// Центр: карта (как Apple Cash на демо).
-/// Низ: иконка iPhone + «Поднесите устройство к считывателю»
-/// и стеклянная плашка с подсказкой (Liquid Glass).
+/// Шторка оплаты в духе скриншотов Apple Pay:
+/// светлая/системная тема, крупная карта сверху в цвете карты,
+/// в центре Face ID / «Поднесите к считывателю», снизу — стопка карт.
+/// Без баннеров «Демонстрация» и без суммы на экране оплаты.
 struct ApplePaySheet: View {
     let cardID: UUID?
     let onDismiss: () -> Void
@@ -17,8 +17,9 @@ struct ApplePaySheet: View {
 
     var body: some View {
         GeometryReader { geo in
-            ZStack(alignment: .bottom) {
-                Color.black.ignoresSafeArea()
+            ZStack {
+                Color(uiColor: .systemBackground)
+                    .ignoresSafeArea()
 
                 if flow.stage == .success {
                     Color.clear
@@ -27,33 +28,46 @@ struct ApplePaySheet: View {
                 }
 
                 VStack(spacing: 0) {
-                    headerBanner
+                    // Карта крупно вверху — цвет/фото из настроек карты.
+                    if let card = selectedCard {
+                        payCardFace(card: card)
+                            .frame(maxWidth: 300)
+                            .padding(.top, 12)
+                            .offset(x: dragX)
+                            .simultaneousGesture(cardSwipe(cards: store.cards))
+                            .onLongPressGesture(minimumDuration: 1.5) {
+                                flow.handleFallbackHold()
+                            }
+                            .transition(.scale(scale: 0.96).combined(with: .opacity))
+                            .accessibilityLabel("Выбранная карта, \(card.title)")
+                    } else {
+                        Color.clear.frame(height: 180)
+                    }
 
-                    Spacer(minLength: 8)
+                    Spacer(minLength: 12)
 
-                    cardArea
+                    stageCenter
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 24)
 
-                    Spacer(minLength: 0)
+                    Spacer(minLength: 12)
 
-                    paymentPrompt
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 12)
-
-                    glassTip
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, geo.safeAreaInsets.bottom > 0 ? 10 : 22)
+                    // Стопка карт снизу, как на скриншоте Apple Pay.
+                    bottomCardPeek
+                        .frame(height: 90)
+                        .clipped()
                 }
-                .padding(.top, 8)
 
+                // Реплика боковой кнопки справа (двойное нажатие).
                 if case .awaitingDoublePress = flow.stage {
-                    VStack(spacing: 10) {
+                    VStack {
                         Spacer()
-                        HStack(alignment: .center, spacing: 14) {
+                        HStack {
                             Spacer()
                             VStack(alignment: .trailing, spacing: 10) {
                                 Text("Дважды нажмите\nдля оплаты")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(.white)
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundColor(.primary)
                                     .multilineTextAlignment(.trailing)
                                     .fixedSize(horizontal: false, vertical: true)
 
@@ -63,99 +77,45 @@ struct ApplePaySheet: View {
                             }
                         }
                         .padding(.trailing, 18)
-                        .padding(.bottom, geo.size.height * 0.42)
+                        .padding(.bottom, geo.size.height * 0.38)
                     }
+                }
+
+                // Закрыть — тонкая кнопка в углу, без большого баннера.
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button {
+                            cancel()
+                        } label: {
+                            Text("Закрыть")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(Color(hex: "0A84FF"))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color(hex: "0A84FF").opacity(0.10))
+                                .clipShape(Capsule())
+                        }
+                        .accessibilityLabel("Закрыть оплату")
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    Spacer()
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
-        .background(Color.black.ignoresSafeArea())
         .onAppear(perform: startFlow)
         .onDisappear {
             flow.stop()
         }
         .simultaneousGesture(dismissGesture)
-        .animation(.easeInOut(duration: 0.3), value: flow.stage)
-        .preferredColorScheme(.dark)
+        .animation(.easeInOut(duration: 0.28), value: flow.stage)
+        // Тема оплаты — как на iPhone (система/светлая/тёмная).
+        .preferredColorScheme(settings.colorScheme)
     }
 
-    // MARK: - Верхний синий баннер
-
-    private var headerBanner: some View {
-        GlassSurface(cornerRadius: 22, tint: Color(hex: "0A84FF").opacity(0.28)) {
-            HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Демонстрация Apple Pay")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                    Text("Средства не будут списаны с Вашей карты")
-                        .font(.system(size: 13))
-                        .foregroundColor(Color.white.opacity(0.78))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 8)
-
-                Button {
-                    cancel()
-                } label: {
-                    Text("Завершить")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color.white.opacity(0.18))
-                                .background(.ultraThinMaterial)
-                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(Color.white.opacity(0.22), lineWidth: 1)
-                        )
-                }
-                .contentShape(Rectangle())
-                .accessibilityLabel("Завершить демо-оплату")
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-        }
-        .padding(.horizontal, 16)
-    }
-
-    // MARK: - Карта
-
-    private var cardArea: some View {
-        VStack(spacing: 14) {
-            if let card = selectedCard {
-                payCardFace(card: card)
-                    .frame(width: 250)
-                    .offset(x: dragX)
-                    .simultaneousGesture(cardSwipe(cards: store.cards))
-                    .onLongPressGesture(minimumDuration: 1.5) {
-                        flow.handleFallbackHold()
-                    }
-                    .transition(.scale(scale: 0.94).combined(with: .opacity))
-                    .accessibilityLabel("Выбранная карта, \(card.title)")
-
-                if let balance = selectedCard?.balance {
-                    Text(balance.moneyString())
-                        .font(.system(size: 22, weight: .semibold).monospacedDigit())
-                        .foregroundColor(Color(hex: "8E8E93"))
-                }
-            } else {
-                Color.clear
-                    .frame(height: 160)
-            }
-        }
-        .padding(.horizontal, 24)
-    }
-
-    private var selectedCard: WalletCard? {
-        guard let id = flow.selectedCardID else { return nil }
-        return store.card(id: id)
-    }
+    // MARK: - Крупная карта (цвет или фото из настроек)
 
     private func payCardFace(card: WalletCard) -> some View {
         ZStack(alignment: .topLeading) {
@@ -165,23 +125,19 @@ struct ApplePaySheet: View {
                         .resizable()
                         .scaledToFill()
                 } else {
-                    // Зелёная Apple Cash-подобная карта — как на скриншоте демо.
                     LinearGradient(
-                        colors: [
-                            Color(hex: "5BC878"),
-                            Color(hex: "30B857"),
-                            Color(hex: "238E43")
-                        ],
+                        colors: card.gradientColors.map { Color(hex: $0) },
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 }
             }
 
+            // Лёгкий скрим для читаемости — только снизу, не «зелёный» фильтр.
             LinearGradient(
                 stops: [
-                    .init(color: .black.opacity(0.05), location: 0),
-                    .init(color: .black.opacity(0.28), location: 1)
+                    .init(color: .clear, location: 0.35),
+                    .init(color: .black.opacity(0.18), location: 1)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
@@ -189,38 +145,51 @@ struct ApplePaySheet: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
-                    HStack(spacing: 4) {
-                        AppleMark(size: 15)
+                    if card.title.localizedCaseInsensitiveContains("cash") {
+                        AppleMark(size: 16)
+                    } else {
                         Text(card.title)
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                             .lineLimit(1)
+                            .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
                     }
                     Spacer(minLength: 6)
-                    if let balance = card.balance {
-                        Text(balance.moneyString())
-                            .font(.system(size: 14, weight: .medium).monospacedDigit())
-                            .foregroundColor(.white.opacity(0.95))
+                    NetworkBadge(network: card.network)
+                }
+
+                Spacer(minLength: 0)
+
+                HStack(alignment: .bottom) {
+                    Text(card.maskedNumber)
+                        .font(.system(size: 15, weight: .medium, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.95))
+                        .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
+                    Spacer(minLength: 8)
+                    if !card.displayHolder.isEmpty {
+                        Text(card.displayHolder)
+                            .font(.system(size: 11, weight: .medium))
+                            .tracking(0.6)
+                            .foregroundColor(.white.opacity(0.85))
                             .lineLimit(1)
-                    } else {
-                        NetworkBadge(network: card.network)
                     }
                 }
-                Spacer(minLength: 0)
-                Text("Apple Cash")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.white.opacity(0.8))
             }
-            .padding(14)
+            .padding(16)
         }
         .aspectRatio(1.586, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.22), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
         )
-        .shadow(color: Color(hex: "30B857").opacity(0.45), radius: 22, x: 0, y: 12)
-        .shadow(color: .black.opacity(0.4), radius: 16, x: 0, y: 8)
+        .shadow(color: Color(hex: card.gradientColors.first ?? "000000").opacity(0.35), radius: 20, x: 0, y: 10)
+        .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 4)
+    }
+
+    private var selectedCard: WalletCard? {
+        guard let id = flow.selectedCardID else { return nil }
+        return store.card(id: id)
     }
 
     private func cardSwipe(cards: [WalletCard]) -> some Gesture {
@@ -235,35 +204,40 @@ struct ApplePaySheet: View {
             }
     }
 
-    // MARK: - Призыв «поднесите к считывателю»
+    // MARK: - Центр: стадии без суммы
 
     @ViewBuilder
-    private var paymentPrompt: some View {
+    private var stageCenter: some View {
         switch flow.stage {
         case .faceID:
-            GlassSurface(cornerRadius: 24) {
-                VStack(spacing: 14) {
-                    FaceIDGlyphView()
-                    Text("Подтвердите лицом")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
-                    Text("Системный Face ID (LAContext)")
-                        .font(.system(size: 13))
-                        .foregroundColor(Color.white.opacity(0.65))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 18)
-                .padding(.horizontal, 16)
+            VStack(spacing: 18) {
+                Image(systemName: "faceid")
+                    .font(.system(size: 56, weight: .regular))
+                    .foregroundColor(Color(hex: "0A84FF"))
+                    .frame(width: 72, height: 72)
+
+                Text("Face ID")
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundColor(Color(hex: "8E8E93"))
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Подтвердите лицом через системный Face ID")
+            .accessibilityLabel("Подтвердите лицом через Face ID")
 
         case .holdNearReader:
-            VStack(spacing: 16) {
-                NFCWaveView()
-                Text("Поднесите устройство\nк считывателю")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(.white)
+            VStack(spacing: 18) {
+                ZStack {
+                    Circle()
+                        .stroke(Color(hex: "0A84FF"), lineWidth: 3)
+                        .frame(width: 72, height: 72)
+
+                    Image(systemName: "iphone")
+                        .font(.system(size: 32, weight: .regular))
+                        .foregroundColor(Color(hex: "0A84FF"))
+                }
+
+                Text("Поднесите к\nсчитывателю")
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundColor(Color(hex: "8E8E93"))
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -271,68 +245,72 @@ struct ApplePaySheet: View {
             .accessibilityLabel("Поднесите устройство к считывателю")
 
         case .success:
-            VStack(spacing: 14) {
+            VStack(spacing: 18) {
                 SuccessCheckView()
                 Text("Готово")
-                    .font(.system(size: 26, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundColor(Color(hex: "8E8E93"))
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Оплата прошла успешно")
 
         case .failed(let message):
-            GlassSurface(cornerRadius: 22, tint: Color(hex: "FF453A").opacity(0.22)) {
-                VStack(spacing: 6) {
-                    Text(message)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(Color(hex: "FF453A"))
-                    Text("Повторите попытку")
-                        .font(.system(size: 13))
-                        .foregroundColor(Color.white.opacity(0.65))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .padding(.horizontal, 16)
+            VStack(spacing: 8) {
+                AppIcon(name: .faceID, size: 48, color: Color(hex: "FF453A"))
+                Text(message)
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(Color(hex: "FF453A"))
+                    .multilineTextAlignment(.center)
+                Text("Повторите попытку")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(hex: "8E8E93"))
             }
 
         case .idle, .awaitingDoublePress:
-            VStack(spacing: 12) {
-                AppIcon(name: .sideButton, size: 34, lineWidth: 2, color: Color(hex: "0A84FF"))
+            VStack(spacing: 16) {
+                AppIcon(name: .sideButton, size: 40, color: Color(hex: "0A84FF"))
                 Text("Подтвердите боковой кнопкой")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(Color(hex: "8E8E93"))
                     .multilineTextAlignment(.center)
                 Text("Дважды нажмите справа от экрана")
                     .font(.system(size: 13))
-                    .foregroundColor(Color.white.opacity(0.6))
+                    .foregroundColor(Color(hex: "AEAEB2"))
             }
         }
     }
 
-    // MARK: - Стеклянная подсказка (Liquid Glass)
+    // MARK: - Стопка карт снизу
 
-    private var glassTip: some View {
-        GlassSurface(cornerRadius: 24, tint: Color.white.opacity(0.10)) {
-            HStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Проведите оплату с iPhone")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.white)
-                    Text("Наклоните iPhone и поднесите к терминалу для бесконтактной оплаты")
-                        .font(.system(size: 13))
-                        .foregroundColor(Color.white.opacity(0.72))
-                        .fixedSize(horizontal: false, vertical: true)
+    private var bottomCardPeek: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            ZStack(alignment: .top) {
+                ForEach(Array(store.cards.prefix(4).enumerated()), id: \.element.id) { index, card in
+                    Rectangle()
+                        .fill(
+                            Group {
+                                if let path = card.coverImagePath, let image = ImageStore.load(relativePath: path) {
+                                    Image(uiImage: image)
+                                } else {
+                                    LinearGradient(
+                                        colors: card.gradientColors.map { Color(hex: $0) },
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                }
+                            }
+                        )
+                        .frame(width: 220, height: 28)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .offset(y: CGFloat(index) * 10)
+                        .opacity(index == 0 ? 0.35 : 0.55)
+                        .zIndex(Double(store.cards.count - index))
                 }
-
-                Spacer(minLength: 4)
-
-                ContactlessBadge()
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .frame(width: 220, height: 70)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Проведите оплату с iPhone. Наклоните iPhone и поднесите к терминалу для бесконтактной оплаты")
+        .padding(.bottom, 8)
     }
 
     // MARK: - Управление

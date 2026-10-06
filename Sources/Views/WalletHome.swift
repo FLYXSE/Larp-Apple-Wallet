@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct WalletHome: View {
     @EnvironmentObject private var store: WalletStore
@@ -14,7 +15,7 @@ struct WalletHome: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            Color.black.ignoresSafeArea()
+            Color(uiColor: .systemBackground).ignoresSafeArea()
 
             VStack(spacing: 0) {
                 header
@@ -82,16 +83,16 @@ struct WalletHome: View {
         .alert("Добавьте карту, чтобы оплатить", isPresented: $showNoCardAlert) {
             Button("ОК", role: .cancel) {}
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(settings.colorScheme)
     }
 
-    // MARK: - Шапка (как на скриншоте: Wallet + cube + plus)
+    // MARK: - Шапка
 
     private var header: some View {
         HStack(alignment: .center, spacing: 12) {
             Text("Wallet")
                 .font(.system(size: 34, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
 
             Spacer(minLength: 8)
 
@@ -101,13 +102,11 @@ struct WalletHome: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(0.92))
-                        .background(.ultraThinMaterial)
-                        .clipShape(Circle())
-                    AppIcon(name: .cube, size: 18, lineWidth: 2, color: .black)
+                        .fill(Color(uiColor: .secondarySystemBackground))
+                    AppIcon(name: .cube, size: 18, color: .primary)
                 }
                 .frame(width: 32, height: 32)
-                .overlay(Circle().stroke(Color.white.opacity(0.25), lineWidth: 1))
+                .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
             }
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
@@ -119,13 +118,11 @@ struct WalletHome: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(0.92))
-                        .background(.ultraThinMaterial)
-                        .clipShape(Circle())
-                    AppIcon(name: .plus, size: 16, lineWidth: 2.2, color: .black)
+                        .fill(Color(uiColor: .secondarySystemBackground))
+                    AppIcon(name: .plus, size: 16, color: .primary)
                 }
                 .frame(width: 32, height: 32)
-                .overlay(Circle().stroke(Color.white.opacity(0.25), lineWidth: 1))
+                .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
             }
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
@@ -143,17 +140,17 @@ struct WalletHome: View {
             ZStack {
                 RoundedRectangle(cornerRadius: CardMetrics.cornerRadius, style: .continuous)
                     .strokeBorder(
-                        Color(hex: "636368"),
+                        Color.secondary,
                         style: StrokeStyle(lineWidth: 1.5, dash: [8, 6])
                     )
                     .frame(width: 220, height: 140)
 
-                AppIcon(name: .creditCard, size: 34, lineWidth: 1.8, color: Color(hex: "636368"))
+                AppIcon(name: .creditCard, size: 34, color: Color.secondary)
             }
 
             Text("Нажмите +, чтобы добавить карту")
                 .font(.system(size: 17))
-                .foregroundColor(Color(hex: "A0A0A5"))
+                .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

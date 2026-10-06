@@ -1,22 +1,27 @@
 import Combine
 import Foundation
+import SwiftUI
 
 struct AppSettings: Codable, Equatable {
     var amount: Decimal
     var merchant: String
     var requireFaceID: Bool
     var useVolumeButtons: Bool
+    /// 0 — системная тема iPhone, 1 — светлая, 2 — тёмная.
+    var appearance: Int
 
     init(
         amount: Decimal = Decimal(string: "1000.00") ?? 1000,
         merchant: String = "DEMO STORE",
         requireFaceID: Bool = true,
-        useVolumeButtons: Bool = false
+        useVolumeButtons: Bool = false,
+        appearance: Int = 0
     ) {
         self.amount = amount
         self.merchant = merchant
         self.requireFaceID = requireFaceID
         self.useVolumeButtons = useVolumeButtons
+        self.appearance = appearance
     }
 
     /// Обратно совместимое декодирование: старый settings.json без новых ключей.
@@ -26,6 +31,7 @@ struct AppSettings: Codable, Equatable {
         merchant = try container.decode(String.self, forKey: .merchant)
         requireFaceID = try container.decodeIfPresent(Bool.self, forKey: .requireFaceID) ?? true
         useVolumeButtons = try container.decodeIfPresent(Bool.self, forKey: .useVolumeButtons) ?? false
+        appearance = try container.decodeIfPresent(Int.self, forKey: .appearance) ?? 0
     }
 }
 
@@ -43,6 +49,10 @@ final class SettingsStore: ObservableObject {
     }
 
     @Published var useVolumeButtons: Bool {
+        didSet { save() }
+    }
+
+    @Published var appearance: Int {
         didSet { save() }
     }
 
@@ -68,6 +78,16 @@ final class SettingsStore: ObservableObject {
         self.merchant = loaded.merchant
         self.requireFaceID = loaded.requireFaceID
         self.useVolumeButtons = loaded.useVolumeButtons
+        self.appearance = loaded.appearance
+    }
+
+    /// nil — следовать системной теме iPhone.
+    var colorScheme: ColorScheme? {
+        switch appearance {
+        case 1: return .light
+        case 2: return .dark
+        default: return nil
+        }
     }
 
     var current: AppSettings {
@@ -75,7 +95,8 @@ final class SettingsStore: ObservableObject {
             amount: amount,
             merchant: merchant.isEmpty ? "DEMO STORE" : merchant,
             requireFaceID: requireFaceID,
-            useVolumeButtons: useVolumeButtons
+            useVolumeButtons: useVolumeButtons,
+            appearance: appearance
         )
     }
 

@@ -6,7 +6,6 @@ struct SettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var amountText: String = ""
-    @State private var appearance: Int = 2
 
     var body: some View {
         VStack(spacing: 0) {
@@ -16,7 +15,7 @@ struct SettingsSheet: View {
                 VStack(alignment: .leading, spacing: 22) {
                     Text("Настройки")
                         .font(.system(size: 34, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                         .padding(.top, 4)
 
                     currencySection
@@ -31,7 +30,8 @@ struct SettingsSheet: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color.black.ignoresSafeArea())
+        .background(Color(uiColor: .systemBackground).ignoresSafeArea())
+        .preferredColorScheme(settings.colorScheme)
         .onAppear {
             amountText = settings.amount.moneyString(currency: "")
                 .trimmingCharacters(in: .whitespaces)
@@ -74,11 +74,11 @@ struct SettingsSheet: View {
                 row {
                     Text("Сумма оплаты")
                         .font(.system(size: 17))
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                     Spacer(minLength: 12)
                     TextField("1 000,00", text: $amountText)
                         .font(.system(size: 17).monospacedDigit())
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                         .multilineTextAlignment(.trailing)
                         .keyboardType(.decimalPad)
                         .frame(width: 120)
@@ -89,11 +89,11 @@ struct SettingsSheet: View {
                 row {
                     Text("Продавец")
                         .font(.system(size: 17))
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                     Spacer(minLength: 12)
                     TextField("DEMO STORE", text: $settings.merchant)
                         .font(.system(size: 17))
-                        .foregroundColor(Color(hex: "A0A0A5"))
+                        .foregroundColor(.secondary)
                         .multilineTextAlignment(.trailing)
                         .autocorrectionDisabled(true)
                         .textInputAutocapitalization(.characters)
@@ -113,10 +113,10 @@ struct SettingsSheet: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Кнопки громкости")
                             .font(.system(size: 17))
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                         Text("Двойное нажатие как аналог боковой кнопки")
                             .font(.system(size: 13))
-                            .foregroundColor(Color(hex: "636368"))
+                            .foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 12)
@@ -137,10 +137,10 @@ struct SettingsSheet: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Требовать Face ID")
                             .font(.system(size: 17))
-                            .foregroundColor(.white)
-                        Text("Всегда показывать системный Face ID (LAContext). Без успеха биометрии платёж блокируется")
+                            .foregroundColor(.primary)
+                        Text("Системный Face ID (LAContext). Без успеха биометрии платёж блокируется")
                             .font(.system(size: 13))
-                            .foregroundColor(Color(hex: "636368"))
+                            .foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 12)
@@ -154,16 +154,14 @@ struct SettingsSheet: View {
 
     private var appearanceSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("ОТОБРАЖЕНИЕ")
+            sectionHeader("ТЕМА")
 
-            Picker("Вид", selection: $appearance) {
+            Picker("Вид", selection: $settings.appearance) {
                 Text("Система").tag(0)
-                Text("Светлый").tag(1)
-                Text("Тёмный").tag(2)
+                Text("Светлая").tag(1)
+                Text("Тёмная").tag(2)
             }
             .pickerStyle(.segmented)
-            .disabled(true)
-            .opacity(0.7)
         }
     }
 
@@ -172,13 +170,13 @@ struct SettingsSheet: View {
             sectionHeader("О ПРИЛОЖЕНИИ")
             Text("Демо-режим: приложение ничего не списывает и не отправляет данные наружу. Реальные платежи, PassKit и NFC не используются.")
                 .font(.system(size: 15))
-                .foregroundColor(Color(hex: "A0A0A5"))
+                .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 6) {
-                AppIcon(name: .refresh, size: 14, lineWidth: 2, color: Color(hex: "0A84FF"))
-                Text("Wallet 1.3 · полностью офлайн")
+                AppIcon(name: .refresh, size: 14, color: Color(hex: "0A84FF"))
+                Text("Wallet 1.4 · полностью офлайн")
                     .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "636368"))
+                    .foregroundColor(.secondary)
             }
         }
         .cardSurface()
@@ -190,7 +188,7 @@ struct SettingsSheet: View {
         Text(title)
             .font(.system(size: 13, weight: .semibold))
             .tracking(0.7)
-            .foregroundColor(Color(hex: "8E8E93"))
+            .foregroundColor(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -204,7 +202,7 @@ struct SettingsSheet: View {
 
     private var hairline: some View {
         Rectangle()
-            .fill(Color(hex: "262629"))
+            .fill(Color.primary.opacity(0.10))
             .frame(height: 0.5)
             .padding(.leading, 14)
     }

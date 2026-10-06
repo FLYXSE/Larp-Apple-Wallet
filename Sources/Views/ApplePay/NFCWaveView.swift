@@ -1,35 +1,19 @@
 import SwiftUI
+import UIKit
 
-/// Волны «приложите к считывателю» + иконка iPhone (как на скриншоте).
+/// Нижняя плашка: iPhone в синем круге + текст «Поднесите к считывателю».
+/// Без стеклянной подсказки «Проведите оплату с iPhone».
 struct NFCWaveView: View {
     @State private var animating = false
 
     var body: some View {
         ZStack {
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(hex: "0A84FF"),
-                            Color(hex: "0057B8")
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 88, height: 88)
-                .overlay(
-                    Circle()
-                        .stroke(Color.white.opacity(0.22), lineWidth: 1)
-                )
-                .shadow(color: Color(hex: "0A84FF").opacity(0.55), radius: 18, x: 0, y: 8)
-
             ForEach(0..<3, id: \.self) { index in
                 Circle()
-                    .stroke(Color.white.opacity(0.55), lineWidth: 2)
-                    .frame(width: 56, height: 56)
-                    .scaleEffect(animating ? 1.55 : 0.7)
-                    .opacity(animating ? 0 : 0.75)
+                    .stroke(Color(hex: "0A84FF").opacity(0.45), lineWidth: 2)
+                    .frame(width: 72, height: 72)
+                    .scaleEffect(animating ? 1.45 : 0.75)
+                    .opacity(animating ? 0 : 0.7)
                     .animation(
                         .easeOut(duration: 1.8)
                         .repeatForever(autoreverses: false)
@@ -38,12 +22,15 @@ struct NFCWaveView: View {
                     )
             }
 
+            Circle()
+                .stroke(Color(hex: "0A84FF"), lineWidth: 3)
+                .frame(width: 72, height: 72)
+
             Image(systemName: "iphone")
-                .font(.system(size: 30, weight: .medium))
-                .foregroundColor(.white)
-                .accessibilityHidden(true)
+                .font(.system(size: 32, weight: .regular))
+                .foregroundColor(Color(hex: "0A84FF"))
         }
-        .frame(width: 88, height: 88)
+        .frame(width: 96, height: 96)
         .onAppear {
             animating = true
         }
@@ -51,37 +38,28 @@ struct NFCWaveView: View {
     }
 }
 
-/// Иконка contactless-расплаты в стеклянной плашке.
+/// Иконка contactless (для мест, где нужна отдельная плашка).
 struct ContactlessBadge: View {
     var body: some View {
         HStack(spacing: 8) {
-            AppIcon(name: .contactless, size: 20, lineWidth: 2.2, color: .white)
-                .frame(width: 34, height: 34)
-                .background(Color.white.opacity(0.12))
-                .background(.ultraThinMaterial)
-                .clipShape(Circle())
-                .overlay(Circle().stroke(Color.white.opacity(0.18), lineWidth: 1))
+            AppIcon(name: .contactless, size: 20, color: Color(hex: "0A84FF"))
 
             VStack(alignment: .leading, spacing: 1) {
                 Text("Бесконтактная")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
                 Text("оплата")
                     .font(.system(size: 11))
-                    .foregroundColor(Color.white.opacity(0.65))
+                    .foregroundColor(.secondary)
             }
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.08))
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        )
+        .background(Color.primary.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.14), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Бесконтактная оплата")

@@ -65,7 +65,7 @@ struct CardDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color.black.ignoresSafeArea())
+        .background(Color(uiColor: .systemBackground).ignoresSafeArea())
         .onAppear {
             dragOffset = 0
             scrollTop = 0
@@ -94,7 +94,7 @@ struct CardDetailView: View {
             Button(action: onClose) {
                 Text("Готово")
                     .font(.system(size: 17))
-                    .foregroundColor(.white)
+                    .foregroundColor(Color(hex: "0A84FF"))
             }
             .frame(height: 44)
             .contentShape(Rectangle())
@@ -103,10 +103,11 @@ struct CardDetailView: View {
             Spacer(minLength: 0)
 
             Button(action: onEdit) {
-                AppIcon(name: .ellipsis, size: 18, lineWidth: 2.2, color: .white)
+                AppIcon(name: .ellipsis, size: 18, color: .primary)
                     .frame(width: 32, height: 32)
-                    .background(Color(hex: "2C2C2E"))
+                    .background(Color(uiColor: .secondarySystemBackground))
                     .clipShape(Circle())
+                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
             }
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
@@ -122,34 +123,32 @@ struct CardDetailView: View {
     private func balanceCard(card: WalletCard) -> some View {
         GlassSurface(cornerRadius: 16) {
             HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Баланс")
-                        .font(.system(size: 14))
-                        .foregroundColor(Color(hex: "8E8E93"))
-                    Text(card.balance?.moneyString() ?? "—")
-                        .font(.system(size: 28, weight: .semibold).monospacedDigit())
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Баланс")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                        Text(card.balance?.moneyString() ?? "—")
+                            .font(.system(size: 28, weight: .semibold).monospacedDigit())
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
 
-                Spacer(minLength: 8)
+                    Spacer(minLength: 8)
 
-                Button {
-                    showSendOrRequest = true
-                } label: {
-                    Text("Отправить или запросить")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(.white)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.12))
-                        .background(.ultraThinMaterial)
-                        .clipShape(Capsule())
-                        .overlay(Capsule().stroke(Color.white.opacity(0.16), lineWidth: 1))
-                }
+                    Button {
+                        showSendOrRequest = true
+                    } label: {
+                        Text("Отправить или запросить")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(Color(hex: "0A84FF"))
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(Color(hex: "0A84FF").opacity(0.12))
+                            .clipShape(Capsule())
+                    }
                 .accessibilityLabel("Отправить или запросить")
             }
             .padding(16)
@@ -163,12 +162,12 @@ struct CardDetailView: View {
         HStack {
             Text("Операции")
                 .font(.system(size: 24, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
             Spacer(minLength: 8)
             Button {
                 showManageTransactions = true
             } label: {
-                AppIcon(name: .search, size: 20, lineWidth: 2, color: Color(hex: "A0A0A5"))
+                AppIcon(name: .search, size: 20, color: .secondary)
                     .frame(width: 36, height: 36)
             }
             .frame(width: 44, height: 44)
@@ -185,7 +184,7 @@ struct CardDetailView: View {
             if transactions.isEmpty {
                 Text("Операций пока нет")
                     .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "636368"))
+                    .foregroundColor(.secondary)
                     .padding(.vertical, 18)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
@@ -218,7 +217,7 @@ struct CardDetailView: View {
 
     private var rowDivider: some View {
         Rectangle()
-            .fill(Color(hex: "262629"))
+            .fill(Color.primary.opacity(0.10))
             .frame(height: 0.5)
             .padding(.leading, 56)
     }
@@ -262,11 +261,11 @@ struct TransactionRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(transaction.merchant)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
                     .lineLimit(1)
                 Text(subtitle)
                     .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "8E8E93"))
+                    .foregroundColor(.secondary)
                     .lineLimit(1)
             }
 
@@ -274,11 +273,11 @@ struct TransactionRow: View {
 
             Text(trailingText ?? transaction.amount.moneyString())
                 .font(.system(size: 15, weight: .medium).monospacedDigit())
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
 
-            AppIcon(name: .chevronRight, size: 14, lineWidth: 2.2, color: Color(hex: "636368"))
+            AppIcon(name: .chevronRight, size: 14, color: .secondary)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
@@ -291,7 +290,7 @@ struct TransactionRow: View {
             .fill(iconBackground)
             .frame(width: 36, height: 36)
             .overlay {
-                AppIcon(name: iconName, size: 18, lineWidth: 2, color: .white)
+                AppIcon(name: iconName, size: 18, color: iconName == .person ? .white : .primary)
             }
     }
 
@@ -299,7 +298,7 @@ struct TransactionRow: View {
         if transaction.category.contains("person") || transaction.merchant.localizedCaseInsensitiveContains("iphone") {
             return Color(hex: "30D158")
         }
-        return Color.black
+        return Color(uiColor: .secondarySystemBackground)
     }
 
     private var iconName: AppIconName {

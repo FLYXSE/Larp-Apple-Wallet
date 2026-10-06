@@ -26,6 +26,21 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertFalse(store.useVolumeButtons)
         XCTAssertEqual(store.merchant, "DEMO STORE")
         XCTAssertEqual(store.amount, Decimal(string: "1000.00"))
+        XCTAssertEqual(store.appearance, 0)
+        XCTAssertNil(store.colorScheme)
+    }
+
+    func testColorSchemeMapping() {
+        let store = SettingsStore(directory: tempDirectory)
+
+        store.appearance = 1
+        XCTAssertEqual(store.colorScheme, .light)
+
+        store.appearance = 2
+        XCTAssertEqual(store.colorScheme, .dark)
+
+        store.appearance = 0
+        XCTAssertNil(store.colorScheme)
     }
 
     func testPersistenceRoundTrip() {
@@ -34,6 +49,7 @@ final class SettingsStoreTests: XCTestCase {
         store.merchant = "CAFE MIR"
         store.requireFaceID = false
         store.useVolumeButtons = true
+        store.appearance = 2
 
         let reloaded = SettingsStore(directory: tempDirectory)
 
@@ -41,6 +57,8 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(reloaded.merchant, "CAFE MIR")
         XCTAssertFalse(reloaded.requireFaceID)
         XCTAssertTrue(reloaded.useVolumeButtons)
+        XCTAssertEqual(reloaded.appearance, 2)
+        XCTAssertEqual(reloaded.colorScheme, .dark)
     }
 
     func testLegacyJSONKeepsKnownFields() throws {
@@ -61,6 +79,7 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertFalse(store.requireFaceID)
         XCTAssertTrue(store.useVolumeButtons)
         XCTAssertEqual(store.amount, Decimal(string: "1200.00"))
+        XCTAssertEqual(store.appearance, 0)
     }
 
     func testCorruptSettingsFileFallsBackToDefaults() throws {
@@ -71,13 +90,17 @@ final class SettingsStoreTests: XCTestCase {
 
         XCTAssertEqual(store.merchant, "DEMO STORE")
         XCTAssertTrue(store.requireFaceID)
+        XCTAssertEqual(store.appearance, 0)
     }
 
     func testCurrentSnapshot() {
         let store = SettingsStore(directory: tempDirectory)
         store.requireFaceID = false
+        store.appearance = 1
 
         XCTAssertFalse(store.current.requireFaceID)
+        XCTAssertEqual(store.current.appearance, 1)
         XCTAssertTrue(AppSettings().requireFaceID)
+        XCTAssertEqual(AppSettings().appearance, 0)
     }
 }
