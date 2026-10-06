@@ -1,7 +1,6 @@
 import SwiftUI
+import UIKit
 
-/// Иконки в стиле Lucide/Tabler (наборы, которые морфит morphicons).
-/// Path рисуются в сетке 24×24 со stroke — как SVG-данные иконок.
 enum AppIconName {
     case cube
     case plus
@@ -17,6 +16,8 @@ enum AppIconName {
     case pencil
     case sideButton
     case refresh
+    case phone
+    case contactless
 }
 
 struct AppIcon: View {
@@ -182,6 +183,32 @@ struct AppIcon: View {
             path.addLine(to: CGPoint(x: 12, y: 6))
             path.move(to: CGPoint(x: 20, y: 12))
             path.addLine(to: CGPoint(x: 16, y: 12))
+        case .phone:
+            path.addRoundedRect(
+                in: CGRect(x: 7, y: 2, width: 10, height: 20),
+                cornerSize: CGSize(width: 2.5, height: 2.5)
+            )
+            path.move(to: CGPoint(x: 10.5, y: 18.2))
+            path.addLine(to: CGPoint(x: 13.5, y: 18.2))
+        case .contactless:
+            path.move(to: CGPoint(x: 4, y: 6))
+            path.addCurve(
+                to: CGPoint(x: 4, y: 18),
+                control1: CGPoint(x: 7, y: 9),
+                control2: CGPoint(x: 7, y: 15)
+            )
+            path.move(to: CGPoint(x: 9.5, y: 3.5))
+            path.addCurve(
+                to: CGPoint(x: 9.5, y: 20.5),
+                control1: CGPoint(x: 13.5, y: 7.5),
+                control2: CGPoint(x: 13.5, y: 16.5)
+            )
+            path.move(to: CGPoint(x: 15, y: 1))
+            path.addCurve(
+                to: CGPoint(x: 15, y: 23),
+                control1: CGPoint(x: 20, y: 6),
+                control2: CGPoint(x: 20, y: 18)
+            )
         }
     }
 }
@@ -210,5 +237,63 @@ struct ApplePayTitle: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Apple Pay")
+    }
+}
+
+/// Liquid Glass поверх стеклянного материала — приближение iOS 26 Glass.
+struct GlassSurface<Content: View>: View {
+    var cornerRadius: CGFloat = 22
+    var tint: Color = .white.opacity(0.08)
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        content
+            .background(
+                ZStack {
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    tint,
+                                    Color.white.opacity(0.03),
+                                    Color.black.opacity(0.12)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.32),
+                                Color.white.opacity(0.10),
+                                Color.white.opacity(0.05)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(Color.white.opacity(0.04))
+                    .blur(radius: 0.1)
+                    .mask(
+                        LinearGradient(
+                            colors: [.white, .clear],
+                            startPoint: .top,
+                            endPoint: .center
+                        )
+                    )
+            )
+            .shadow(color: .black.opacity(0.28), radius: 18, x: 0, y: 10)
     }
 }

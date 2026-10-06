@@ -22,7 +22,7 @@ final class SettingsStoreTests: XCTestCase {
     func testDefaults() {
         let store = SettingsStore(directory: tempDirectory)
 
-        XCTAssertFalse(store.requireFaceID)
+        XCTAssertTrue(store.requireFaceID)
         XCTAssertFalse(store.useVolumeButtons)
         XCTAssertEqual(store.merchant, "DEMO STORE")
         XCTAssertEqual(store.amount, Decimal(string: "1000.00"))
@@ -32,14 +32,14 @@ final class SettingsStoreTests: XCTestCase {
         let store = SettingsStore(directory: tempDirectory)
         store.amount = Decimal(string: "250.50") ?? 0
         store.merchant = "CAFE MIR"
-        store.requireFaceID = true
+        store.requireFaceID = false
         store.useVolumeButtons = true
 
         let reloaded = SettingsStore(directory: tempDirectory)
 
         XCTAssertEqual(reloaded.amount, Decimal(string: "250.50"))
         XCTAssertEqual(reloaded.merchant, "CAFE MIR")
-        XCTAssertTrue(reloaded.requireFaceID)
+        XCTAssertFalse(reloaded.requireFaceID)
         XCTAssertTrue(reloaded.useVolumeButtons)
     }
 
@@ -48,7 +48,7 @@ final class SettingsStoreTests: XCTestCase {
         {
           "amount": 1200.00,
           "merchant": "OLD STORE",
-          "requireFaceID": true,
+          "requireFaceID": false,
           "useVolumeButtons": true,
           "useFaceScan": true
         }
@@ -58,7 +58,7 @@ final class SettingsStoreTests: XCTestCase {
         let store = SettingsStore(directory: tempDirectory)
 
         XCTAssertEqual(store.merchant, "OLD STORE")
-        XCTAssertTrue(store.requireFaceID)
+        XCTAssertFalse(store.requireFaceID)
         XCTAssertTrue(store.useVolumeButtons)
         XCTAssertEqual(store.amount, Decimal(string: "1200.00"))
     }
@@ -70,14 +70,14 @@ final class SettingsStoreTests: XCTestCase {
         let store = SettingsStore(directory: tempDirectory)
 
         XCTAssertEqual(store.merchant, "DEMO STORE")
-        XCTAssertFalse(store.requireFaceID)
+        XCTAssertTrue(store.requireFaceID)
     }
 
     func testCurrentSnapshot() {
         let store = SettingsStore(directory: tempDirectory)
-        store.requireFaceID = true
+        store.requireFaceID = false
 
-        XCTAssertTrue(store.current.requireFaceID)
-        XCTAssertFalse(AppSettings().requireFaceID)
+        XCTAssertFalse(store.current.requireFaceID)
+        XCTAssertTrue(AppSettings().requireFaceID)
     }
 }

@@ -101,10 +101,13 @@ struct WalletHome: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(Color.white)
+                        .fill(Color.white.opacity(0.92))
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
                     AppIcon(name: .cube, size: 18, lineWidth: 2, color: .black)
                 }
                 .frame(width: 32, height: 32)
+                .overlay(Circle().stroke(Color.white.opacity(0.25), lineWidth: 1))
             }
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
@@ -116,10 +119,13 @@ struct WalletHome: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(Color.white)
+                        .fill(Color.white.opacity(0.92))
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
                     AppIcon(name: .plus, size: 16, lineWidth: 2.2, color: .black)
                 }
                 .frame(width: 32, height: 32)
+                .overlay(Circle().stroke(Color.white.opacity(0.25), lineWidth: 1))
             }
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())

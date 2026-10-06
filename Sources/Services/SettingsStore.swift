@@ -10,7 +10,7 @@ struct AppSettings: Codable, Equatable {
     init(
         amount: Decimal = Decimal(string: "1000.00") ?? 1000,
         merchant: String = "DEMO STORE",
-        requireFaceID: Bool = false,
+        requireFaceID: Bool = true,
         useVolumeButtons: Bool = false
     ) {
         self.amount = amount
@@ -24,7 +24,7 @@ struct AppSettings: Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         amount = try container.decode(Decimal.self, forKey: .amount)
         merchant = try container.decode(String.self, forKey: .merchant)
-        requireFaceID = try container.decodeIfPresent(Bool.self, forKey: .requireFaceID) ?? false
+        requireFaceID = try container.decodeIfPresent(Bool.self, forKey: .requireFaceID) ?? true
         useVolumeButtons = try container.decodeIfPresent(Bool.self, forKey: .useVolumeButtons) ?? false
     }
 }

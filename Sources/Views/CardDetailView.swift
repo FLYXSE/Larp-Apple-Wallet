@@ -120,39 +120,40 @@ struct CardDetailView: View {
     // MARK: - Баланс
 
     private func balanceCard(card: WalletCard) -> some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Баланс")
-                    .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "8E8E93"))
-                Text(card.balance?.moneyString() ?? "—")
-                    .font(.system(size: 28, weight: .semibold).monospacedDigit())
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
+        GlassSurface(cornerRadius: 16) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Баланс")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(hex: "8E8E93"))
+                    Text(card.balance?.moneyString() ?? "—")
+                        .font(.system(size: 28, weight: .semibold).monospacedDigit())
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
 
-            Spacer(minLength: 8)
+                Spacer(minLength: 8)
 
-            Button {
-                showSendOrRequest = true
-            } label: {
-                Text("Отправить или запросить")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(.white)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(Color(hex: "2C2C2E"))
-                    .clipShape(Capsule())
+                Button {
+                    showSendOrRequest = true
+                } label: {
+                    Text("Отправить или запросить")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.white)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.12))
+                        .background(.ultraThinMaterial)
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color.white.opacity(0.16), lineWidth: 1))
+                }
+                .accessibilityLabel("Отправить или запросить")
             }
-            .accessibilityLabel("Отправить или запросить")
+            .padding(16)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(hex: "1C1C1E"))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 
@@ -188,16 +189,16 @@ struct CardDetailView: View {
                     .padding(.vertical, 18)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                VStack(spacing: 0) {
-                    ForEach(visible) { transaction in
-                        TransactionRow(transaction: transaction)
-                        if transaction.id != visible.last?.id {
-                            rowDivider
+                GlassSurface(cornerRadius: 16) {
+                    VStack(spacing: 0) {
+                        ForEach(visible) { transaction in
+                            TransactionRow(transaction: transaction)
+                            if transaction.id != visible.last?.id {
+                                rowDivider
+                            }
                         }
                     }
                 }
-                .background(Color(hex: "1C1C1E"))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                 if transactions.count > visible.count {
                     Button {

@@ -1,6 +1,7 @@
+import SwiftUI
+import LocalAuthentication
 import Combine
 import Foundation
-import LocalAuthentication
 import UIKit
 
 enum PaymentStage: Equatable {
@@ -20,9 +21,11 @@ enum PaymentStage: Equatable {
 /// Стейт-машина симуляции оплаты:
 /// idle → awaitingDoublePress → faceID → holdNearReader → success
 ///
-/// Стадия `faceID` идёт через **системный Face ID** (`LAContext`).
-/// На симуляторе / без биометрии — анимация глифа и переход дальше
-/// (или ошибка, если включён «Требовать Face ID»).
+/// Стадия `faceID` — **настоящий системный Face ID** через `LAContext.evaluatePolicy`.
+/// Настоящий промпт показывается всегда, когда биометрия доступна.
+/// По умолчанию `requireFaceID = true`: без успеха биометрии платёж не идёт.
+/// Симулятор / без enrolled биометрии — короткая анимация глифа + fallback
+/// (или ошибка «Face ID недоступен» при включённом «Требовать Face ID»).
 final class PaymentFlowController: ObservableObject {
     @Published private(set) var stage: PaymentStage = .idle
     @Published private(set) var selectedCardID: UUID?
@@ -40,6 +43,7 @@ final class PaymentFlowController: ObservableObject {
     private var biometricWaitWorkItem: DispatchWorkItem?
     private var failureResetWorkItem: DispatchWorkItem?
     private var autoCloseWorkItem: DispatchWorkItem?
+    private var laContext: LAContext?
 
     private var biometricResult: (succeeded: Bool, available: Bool)?
     private var isRunning = false
@@ -103,7 +107,7 @@ final class PaymentFlowController: ObservableObject {
         Haptics.selection()
     }
 
-    // MARK: - Face ID (системный LAContext)
+    // MARK: - Face ID (настоящий системный промпт LAContext)
 
     private func enterFaceID() {
         stage = .faceID
@@ -111,9 +115,10 @@ final class PaymentFlowController: ObservableObject {
         biometricResult = nil
 
         let context = LAContext()
+        laContext = context
         var error: NSError?
+        // Симулятор / без enrolled биометрии — глиф + fallback.
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
-            // Симулятор / без Face ID — глиф + fallback.
             biometricResult = (succeeded: false, available: false)
             faceIDWorkItem?.cancel()
             let work = DispatchWorkItem { [weak self] in
@@ -124,6 +129,7 @@ final class PaymentFlowController: ObservableObject {
             return
         }
 
+        // Настоящий системный экран биометрии поверх приложения.
         context.evaluatePolicy(
             .deviceOwnerAuthenticationWithBiometrics,
             localizedReason: "Подтвердите оплату в Wallet"
@@ -160,6 +166,7 @@ final class PaymentFlowController: ObservableObject {
         guard isRunning, stage == .faceID else { return }
         faceIDWorkItem?.cancel()
         faceIDWorkItem = nil
+        laContext = nil
 
         if settings.requireFaceID {
             guard result.available, result.succeeded else {
@@ -198,6 +205,7 @@ final class PaymentFlowController: ObservableObject {
         tiltDetector.stop()
         holdTimeoutTimer?.invalidate()
         holdTimeoutTimer = nil
+        laContext = nil
         stage = .failed(message)
         Haptics.impact(.rigid)
 
@@ -257,6 +265,7 @@ final class PaymentFlowController: ObservableObject {
         faceIDWorkItem = nil
         biometricWaitWorkItem?.cancel()
         biometricWaitWorkItem = nil
+        laContext = nil
     }
 
     private func teardown() {

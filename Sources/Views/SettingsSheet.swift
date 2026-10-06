@@ -138,7 +138,7 @@ struct SettingsSheet: View {
                         Text("Требовать Face ID")
                             .font(.system(size: 17))
                             .foregroundColor(.white)
-                        Text("Оплата идёт через системный Face ID. При включении неудача блокирует платёж")
+                        Text("Всегда показывать системный Face ID (LAContext). Без успеха биометрии платёж блокируется")
                             .font(.system(size: 13))
                             .foregroundColor(Color(hex: "636368"))
                             .fixedSize(horizontal: false, vertical: true)
@@ -176,7 +176,7 @@ struct SettingsSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 6) {
                 AppIcon(name: .refresh, size: 14, lineWidth: 2, color: Color(hex: "0A84FF"))
-                Text("Wallet 1.2 · полностью офлайн")
+                Text("Wallet 1.3 · полностью офлайн")
                     .font(.system(size: 13))
                     .foregroundColor(Color(hex: "636368"))
             }
@@ -223,9 +223,10 @@ struct SettingsSheet: View {
 
 private extension View {
     func cardSurface() -> some View {
-        padding(4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(hex: "1C1C1E"))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        GlassSurface(cornerRadius: 16) {
+            self
+                .padding(4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 }

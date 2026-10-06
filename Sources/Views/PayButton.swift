@@ -14,9 +14,9 @@ struct PayButton: View {
                 .clipShape(Circle())
                 .overlay(
                     Circle()
-                        .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5)
+                        .stroke(Color.white.opacity(0.22), lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.45), radius: 14, x: 0, y: 6)
+                .shadow(color: Color(hex: "0A84FF").opacity(0.55), radius: 16, x: 0, y: 8)
         }
         .accessibilityLabel("Оплатить")
         .accessibilityHint("Открывает симуляцию Apple Pay")
@@ -24,10 +24,12 @@ struct PayButton: View {
 
     private var buttonBackground: some View {
         ZStack {
-            Rectangle()
-                .fill(.ultraThinMaterial)
-            Rectangle()
-                .fill(Color.white.opacity(0.12))
+            Circle()
+                .fill(Color(hex: "0A84FF").opacity(0.95))
+            Circle()
+                .fill(Color.white.opacity(0.10))
+                .background(.ultraThinMaterial)
+                .clipShape(Circle())
         }
     }
 }
