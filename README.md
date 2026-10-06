@@ -39,10 +39,12 @@ Apple Wallet Clone/
 │   ├── AppleWalletCloneApp.swift
 │   ├── Models/                    # WalletCard, Transaction, CardType/Network
 │   ├── Services/                  # WalletStore, ImageStore, SettingsStore,
-│   │                              # PaymentFlowController, FaceScanner,
+│   │                              # PaymentFlowController (Face ID / LAContext),
 │   │                              # MotionTiltDetector, VolumeButtonObserver, Haptics
 │   ├── Views/                     # WalletHome, стопка, детали, формы, кроп
-│   │   └── ApplePay/              # шторка оплаты, FaceScanStageView, Face ID/NFC/Success
+│   │   ├── AppIcons.swift         # Lucide/Tabler-иконки (набор morphicons)
+│   │   ├── ManageTransactionsView.swift
+│   │   └── ApplePay/              # шторка оплаты (панель Apple Pay), Face ID/NFC/Success
 │   └── Resources/                 # Assets.xcassets (AppIcon 1024), Localizable.xcstrings
 └── Tests/
     ├── WalletStoreTests.swift     # юнит-тесты хранилища
