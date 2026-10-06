@@ -6,17 +6,32 @@ struct AppSettings: Codable, Equatable {
     var merchant: String
     var requireFaceID: Bool
     var useVolumeButtons: Bool
+    /// Реальное сканирование лица камерой на стадии Face ID (иначе legacy-глиф).
+    var useFaceScan: Bool
 
     init(
         amount: Decimal = Decimal(string: "1000.00") ?? 1000,
         merchant: String = "DEMO STORE",
         requireFaceID: Bool = false,
-        useVolumeButtons: Bool = false
+        useVolumeButtons: Bool = false,
+        useFaceScan: Bool = true
     ) {
         self.amount = amount
         self.merchant = merchant
         self.requireFaceID = requireFaceID
         self.useVolumeButtons = useVolumeButtons
+        self.useFaceScan = useFaceScan
+    }
+
+    /// Обратно совместимое декодирование: старый `settings.json` без
+    /// новых ключей не теряет сохранённые значения.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        amount = try container.decode(Decimal.self, forKey: .amount)
+        merchant = try container.decode(String.self, forKey: .merchant)
+        requireFaceID = try container.decodeIfPresent(Bool.self, forKey: .requireFaceID) ?? false
+        useVolumeButtons = try container.decodeIfPresent(Bool.self, forKey: .useVolumeButtons) ?? false
+        useFaceScan = try container.decodeIfPresent(Bool.self, forKey: .useFaceScan) ?? true
     }
 }
 
@@ -34,6 +49,10 @@ final class SettingsStore: ObservableObject {
     }
 
     @Published var useVolumeButtons: Bool {
+        didSet { save() }
+    }
+
+    @Published var useFaceScan: Bool {
         didSet { save() }
     }
 
@@ -60,6 +79,7 @@ final class SettingsStore: ObservableObject {
         self.merchant = loaded.merchant
         self.requireFaceID = loaded.requireFaceID
         self.useVolumeButtons = loaded.useVolumeButtons
+        self.useFaceScan = loaded.useFaceScan
     }
 
     var current: AppSettings {
@@ -67,7 +87,8 @@ final class SettingsStore: ObservableObject {
             amount: amount,
             merchant: merchant.isEmpty ? "DEMO STORE" : merchant,
             requireFaceID: requireFaceID,
-            useVolumeButtons: useVolumeButtons
+            useVolumeButtons: useVolumeButtons,
+            useFaceScan: useFaceScan
         )
     }
 

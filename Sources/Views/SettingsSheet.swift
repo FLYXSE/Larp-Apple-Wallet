@@ -116,12 +116,31 @@ struct SettingsSheet: View {
                 .padding(.bottom, 4)
 
             VStack(alignment: .leading, spacing: 4) {
+                Toggle(isOn: $settings.useFaceScan) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Сканировать лицо камерой")
+                            .font(.system(size: 17))
+                            .foregroundColor(.white)
+                        Text("Стадия Face ID идёт через фронтальную камеру (Vision). При отказе в доступе включается классическая анимация")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(hex: "636368"))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.vertical, 12)
+            }
+
+            Rectangle()
+                .fill(Color(hex: "262629"))
+                .frame(height: 0.5)
+
+            VStack(alignment: .leading, spacing: 4) {
                 Toggle(isOn: $settings.requireFaceID) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Требовать успешный Face ID")
                             .font(.system(size: 17))
                             .foregroundColor(.white)
-                        Text("По умолчанию оплата идёт дальше даже без реальной проверки")
+                        Text("Для legacy-пути (глиф/системный Face ID). При камерном сканировании оплата идёт после подтверждения лица в кадре")
                             .font(.system(size: 13))
                             .foregroundColor(Color(hex: "636368"))
                             .fixedSize(horizontal: false, vertical: true)
@@ -159,7 +178,7 @@ struct SettingsSheet: View {
                 .font(.system(size: 15))
                 .foregroundColor(Color(hex: "A0A0A5"))
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Кошелёк 1.0 · полностью офлайн")
+            Text("Кошелёк 1.1 · полностью офлайн")
                 .font(.system(size: 13))
                 .foregroundColor(Color(hex: "636368"))
         }

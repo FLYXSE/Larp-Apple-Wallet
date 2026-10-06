@@ -146,13 +146,17 @@ struct ApplePaySheet: View {
             )
 
         case .faceID:
-            VStack(spacing: 22) {
-                FaceIDGlyphView()
-                Text("Подтвердите лицом")
-                    .font(.system(size: 17))
-                    .foregroundColor(.white)
+            if flow.isCameraScanning {
+                FaceScanStageView(scanner: flow.faceScanner)
+            } else {
+                VStack(spacing: 22) {
+                    FaceIDGlyphView()
+                    Text("Подтвердите лицом")
+                        .font(.system(size: 17))
+                        .foregroundColor(.white)
+                }
+                .accessibilityElement(children: .combine)
             }
-            .accessibilityElement(children: .combine)
 
         case .holdNearReader:
             VStack(spacing: 16) {
