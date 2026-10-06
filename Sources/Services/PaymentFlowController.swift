@@ -17,25 +17,16 @@ enum PaymentStage: Equatable {
     }
 }
 
-/// Стейт-машина симуляции оплаты (§4.4 и §7 ТЗ):
+/// Стейт-машина симуляции оплаты:
 /// idle → awaitingDoublePress → faceID → holdNearReader → success
-/// cancel/timeout — из любого состояния.
 ///
-/// Стадия `faceID` по умолчанию идёт через реальное распознавание лица
-/// (`FaceScanner`: камера + Vision). Если камера недоступна или доступ
-/// запрещён — автоматический fallback на классическую анимацию Face ID
-/// (и опционально реальную `LAContext`, если включён флаг «Требовать
-/// успешный Face ID»).
+/// Стадия `faceID` идёт через **системный Face ID** (`LAContext`).
+/// На симуляторе / без биометрии — анимация глифа и переход дальше
+/// (или ошибка, если включён «Требовать Face ID»).
 final class PaymentFlowController: ObservableObject {
     @Published private(set) var stage: PaymentStage = .idle
     @Published private(set) var selectedCardID: UUID?
-    /// Идёт сканирование лица камерой — шторка показывает живое превью.
-    @Published private(set) var isCameraScanning = false
 
-    /// Реальное сканирование лица (фронтальная камера + Vision).
-    let faceScanner = FaceScanner()
-
-    /// Вызывается для автозакрытия шторки после успешной оплаты.
     var onFinished: (() -> Void)?
 
     private weak var store: WalletStore?
@@ -44,18 +35,13 @@ final class PaymentFlowController: ObservableObject {
     private let tiltDetector = MotionTiltDetector()
     private var volumeObserver: VolumeButtonObserver?
 
-    /// Сколько секунд ждём лицо в кадре, прежде чем счесть проверку провальной.
-    private let faceScanTimeout: TimeInterval = 15
-
     private var holdTimeoutTimer: Timer?
     private var faceIDWorkItem: DispatchWorkItem?
     private var biometricWaitWorkItem: DispatchWorkItem?
     private var failureResetWorkItem: DispatchWorkItem?
     private var autoCloseWorkItem: DispatchWorkItem?
-    private var faceScanWorkItem: DispatchWorkItem?
 
     private var biometricResult: (succeeded: Bool, available: Bool)?
-    private var waitingForBiometrics = false
     private var isRunning = false
 
     deinit {
@@ -117,131 +103,54 @@ final class PaymentFlowController: ObservableObject {
         Haptics.selection()
     }
 
-    // MARK: - Стадии
+    // MARK: - Face ID (системный LAContext)
 
     private func enterFaceID() {
         stage = .faceID
         Haptics.doublePress()
         biometricResult = nil
-        waitingForBiometrics = false
 
-        if settings.useFaceScan {
-            startCameraFaceScan()
-        } else {
-            startLegacyFaceID()
-        }
-    }
-
-    /// Основной путь: реальное распознавание лица камерой.
-    private func startCameraFaceScan() {
-        isCameraScanning = true
-        faceScanner.onConfirmed = { [weak self] in
-            self?.faceScanConfirmed()
-        }
-        faceScanner.onStatusChange = { [weak self] status in
-            self?.faceScanStatusChanged(status)
-        }
-        faceScanner.start()
-        scheduleFaceScanTimeout()
-    }
-
-    private func faceScanStatusChanged(_ status: FaceScanner.Status) {
-        guard isRunning, stage == .faceID, isCameraScanning else { return }
-        switch status {
-        case .denied, .unavailable:
-            // Fallback: классическая анимация Face ID (+ LAContext по флагу).
-            stopCameraFaceScan()
-            startLegacyFaceID()
-        case .idle, .requestingAccess, .running:
-            break
-        }
-    }
-
-    private func faceScanConfirmed() {
-        guard isRunning, stage == .faceID else { return }
-        stopCameraFaceScan()
-        enterHoldNearReader()
-    }
-
-    private func faceScanTimedOut() {
-        guard isRunning, stage == .faceID, isCameraScanning else { return }
-        stopCameraFaceScan()
-        enterFailure("Лицо не распознано")
-    }
-
-    private func stopCameraFaceScan() {
-        faceScanWorkItem?.cancel()
-        faceScanWorkItem = nil
-        faceScanner.onConfirmed = nil
-        faceScanner.onStatusChange = nil
-        faceScanner.stop()
-        isCameraScanning = false
-    }
-
-    private func scheduleFaceScanTimeout() {
-        faceScanWorkItem?.cancel()
-        let work = DispatchWorkItem { [weak self] in
-            self?.faceScanTimedOut()
-        }
-        faceScanWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + faceScanTimeout, execute: work)
-    }
-
-    /// Fallback-путь без камеры: анимация глифа + опционально реальная LAContext.
-    private func startLegacyFaceID() {
-        isCameraScanning = false
-        evaluateBiometrics()
-
-        faceIDWorkItem?.cancel()
-        let work = DispatchWorkItem { [weak self] in
-            self?.faceIDAnimationFinished()
-        }
-        faceIDWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2, execute: work)
-    }
-
-    private func evaluateBiometrics() {
         let context = LAContext()
         var error: NSError?
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
-            // Симулятор / без Face ID — реальная проверка недоступна.
+            // Симулятор / без Face ID — глиф + fallback.
             biometricResult = (succeeded: false, available: false)
+            faceIDWorkItem?.cancel()
+            let work = DispatchWorkItem { [weak self] in
+                self?.faceIDFallbackFinished()
+            }
+            faceIDWorkItem = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2, execute: work)
             return
         }
+
         context.evaluatePolicy(
             .deviceOwnerAuthenticationWithBiometrics,
-            localizedReason: "Демо-оплата в Wallet"
+            localizedReason: "Подтвердите оплату в Wallet"
         ) { [weak self] success, _ in
             DispatchQueue.main.async {
-                guard let self = self else { return }
-                let result = (succeeded: success, available: true)
-                self.biometricResult = result
-                if self.waitingForBiometrics {
-                    self.waitingForBiometrics = false
-                    self.biometricWaitWorkItem?.cancel()
-                    self.biometricWaitWorkItem = nil
-                    self.finishFaceID(with: result)
-                }
+                guard let self = self, self.isRunning, self.stage == .faceID else { return }
+                self.biometricResult = (succeeded: success, available: true)
+                self.finishFaceID(with: (succeeded: success, available: true))
             }
         }
+
+        // Если пользователь свернул системный Face ID без результата.
+        faceIDWorkItem?.cancel()
+        let timeout = DispatchWorkItem { [weak self] in
+            guard let self = self, self.isRunning, self.stage == .faceID, self.biometricResult == nil else {
+                return
+            }
+            self.finishFaceID(with: (succeeded: false, available: true))
+        }
+        faceIDWorkItem = timeout
+        DispatchQueue.main.asyncAfter(deadline: .now() + 25, execute: timeout)
     }
 
-    private func faceIDAnimationFinished() {
+    private func faceIDFallbackFinished() {
         guard isRunning, stage == .faceID else { return }
-
         if settings.requireFaceID {
-            if let result = biometricResult {
-                finishFaceID(with: result)
-            } else {
-                waitingForBiometrics = true
-                let work = DispatchWorkItem { [weak self] in
-                    guard let self = self, self.waitingForBiometrics else { return }
-                    self.waitingForBiometrics = false
-                    self.finishFaceID(with: (succeeded: false, available: true))
-                }
-                biometricWaitWorkItem = work
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: work)
-            }
+            enterFailure("Face ID недоступен")
         } else {
             enterHoldNearReader()
         }
@@ -249,12 +158,19 @@ final class PaymentFlowController: ObservableObject {
 
     private func finishFaceID(with result: (succeeded: Bool, available: Bool)) {
         guard isRunning, stage == .faceID else { return }
-        if settings.requireFaceID, result.available, !result.succeeded {
-            enterFailure("Попробуйте снова")
-            return
+        faceIDWorkItem?.cancel()
+        faceIDWorkItem = nil
+
+        if settings.requireFaceID {
+            guard result.available, result.succeeded else {
+                enterFailure(result.available ? "Попробуйте снова" : "Face ID недоступен")
+                return
+            }
         }
         enterHoldNearReader()
     }
+
+    // MARK: - Стадии
 
     private func enterHoldNearReader() {
         stage = .holdNearReader
@@ -341,13 +257,11 @@ final class PaymentFlowController: ObservableObject {
         faceIDWorkItem = nil
         biometricWaitWorkItem?.cancel()
         biometricWaitWorkItem = nil
-        waitingForBiometrics = false
     }
 
     private func teardown() {
         isRunning = false
         teardownSensorsAndTimers()
-        stopCameraFaceScan()
         autoCloseWorkItem?.cancel()
         autoCloseWorkItem = nil
         failureResetWorkItem?.cancel()

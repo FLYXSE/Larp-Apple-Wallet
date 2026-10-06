@@ -85,35 +85,45 @@ struct WalletHome: View {
         .preferredColorScheme(.dark)
     }
 
-    // MARK: - Шапка
+    // MARK: - Шапка (как на скриншоте: Wallet + cube + plus)
 
     private var header: some View {
         HStack(alignment: .center, spacing: 12) {
-            Text("Кошелёк")
+            Text("Wallet")
                 .font(.system(size: 34, weight: .bold))
                 .foregroundColor(.white)
 
             Spacer(minLength: 8)
 
             Button {
-                showAddCard = true
+                showSettings = true
                 Haptics.selection()
             } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 32, height: 32)
-                    .background(Color.white.opacity(0.12))
-                    .clipShape(Circle())
+                ZStack {
+                    Circle()
+                        .fill(Color.white)
+                    AppIcon(name: .cube, size: 18, lineWidth: 2, color: .black)
+                }
+                .frame(width: 32, height: 32)
             }
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
-            .onLongPressGesture(minimumDuration: 0.5) {
-                showSettings = true
+            .accessibilityLabel("Открыть настройки / детали")
+
+            Button {
+                showAddCard = true
                 Haptics.selection()
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(Color.white)
+                    AppIcon(name: .plus, size: 16, lineWidth: 2.2, color: .black)
+                }
+                .frame(width: 32, height: 32)
             }
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
             .accessibilityLabel("Добавить карту")
-            .accessibilityHint("Долгое нажатие открывает настройки")
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -132,9 +142,7 @@ struct WalletHome: View {
                     )
                     .frame(width: 220, height: 140)
 
-                Image(systemName: "creditcard")
-                    .font(.system(size: 34, weight: .regular))
-                    .foregroundColor(Color(hex: "636368"))
+                AppIcon(name: .creditCard, size: 34, lineWidth: 1.8, color: Color(hex: "636368"))
             }
 
             Text("Нажмите +, чтобы добавить карту")

@@ -9,6 +9,7 @@ private struct DetailScrollTopKey: PreferenceKey {
     }
 }
 
+/// Детали карты в духе Apple Cash: Done / …, карта, баланс + действие, операции.
 struct CardDetailView: View {
     let cardID: UUID
     let onClose: () -> Void
@@ -19,7 +20,8 @@ struct CardDetailView: View {
 
     @State private var dragOffset: CGFloat = 0
     @State private var scrollTop: CGFloat = 0
-    @State private var showAllTransactions = false
+    @State private var showManageTransactions = false
+    @State private var showSendOrRequest = false
 
     private var card: WalletCard? {
         store.card(id: cardID)
@@ -31,17 +33,17 @@ struct CardDetailView: View {
 
             if let card = card {
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 18) {
                         CardFace(card: card)
                             .offset(y: max(0, dragOffset))
                             .simultaneousGesture(dragToCollapse)
                             .padding(.top, 4)
 
-                        titleBlock(card: card)
-                        transactionsBlock(card: card)
+                        balanceCard(card: card)
+                        transactionsHeader
+                        transactionsList(card: card)
 
-                        toolbarView
-                            .padding(.top, 4)
+                        Color.clear.frame(height: 24)
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 32)
@@ -67,12 +69,21 @@ struct CardDetailView: View {
         .onAppear {
             dragOffset = 0
             scrollTop = 0
-            showAllTransactions = false
         }
         .onChange(of: store.cards) { _ in
             if card == nil {
                 onClose()
             }
+        }
+        .sheet(isPresented: $showManageTransactions) {
+            if let card = card {
+                ManageTransactionsView(cardID: card.id)
+            }
+        }
+        .alert("Отправить или запросить", isPresented: $showSendOrRequest) {
+            Button("ОК", role: .cancel) {}
+        } message: {
+            Text("В демо-режиме переводы не выполняются.")
         }
     }
 
@@ -81,25 +92,20 @@ struct CardDetailView: View {
     private var topBar: some View {
         HStack(spacing: 12) {
             Button(action: onClose) {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 15, weight: .bold))
+                Text("Готово")
+                    .font(.system(size: 17))
                     .foregroundColor(.white)
-                    .frame(width: 32, height: 32)
-                    .background(Color(hex: "1C1C1E"))
-                    .clipShape(Circle())
             }
-            .frame(width: 44, height: 44)
+            .frame(height: 44)
             .contentShape(Rectangle())
-            .accessibilityLabel("Свернуть карту")
+            .accessibilityLabel("Закрыть карту")
 
             Spacer(minLength: 0)
 
             Button(action: onEdit) {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                AppIcon(name: .ellipsis, size: 18, lineWidth: 2.2, color: .white)
                     .frame(width: 32, height: 32)
-                    .background(Color(hex: "1C1C1E"))
+                    .background(Color(hex: "2C2C2E"))
                     .clipShape(Circle())
             }
             .frame(width: 44, height: 44)
@@ -111,74 +117,98 @@ struct CardDetailView: View {
         .padding(.bottom, 4)
     }
 
-    // MARK: - Заголовок и баланс
+    // MARK: - Баланс
 
-    private func titleBlock(card: WalletCard) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(card.title)
-                .font(.system(size: 23, weight: .semibold))
-                .foregroundColor(.white)
-                .lineLimit(1)
-
-            if let balance = card.balance {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("БАЛАНС")
-                        .font(.system(size: 13, weight: .semibold))
-                        .tracking(0.7)
-                        .foregroundColor(Color(hex: "A0A0A5"))
-                    Text(balance.moneyString())
-                        .font(.system(size: 40, weight: .bold).monospacedDigit())
-                        .foregroundColor(.white)
-                }
-            } else {
-                Text(card.type.title.uppercased())
-                    .font(.system(size: 13, weight: .semibold))
-                    .tracking(0.7)
-                    .foregroundColor(Color(hex: "A0A0A5"))
+    private func balanceCard(card: WalletCard) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Баланс")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(hex: "8E8E93"))
+                Text(card.balance?.moneyString() ?? "—")
+                    .font(.system(size: 28, weight: .semibold).monospacedDigit())
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
+
+            Spacer(minLength: 8)
+
+            Button {
+                showSendOrRequest = true
+            } label: {
+                Text("Отправить или запросить")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Color(hex: "2C2C2E"))
+                    .clipShape(Capsule())
+            }
+            .accessibilityLabel("Отправить или запросить")
         }
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(hex: "1C1C1E"))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 
     // MARK: - Операции
 
-    private func transactionsBlock(card: WalletCard) -> some View {
+    private var transactionsHeader: some View {
+        HStack {
+            Text("Операции")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(.white)
+            Spacer(minLength: 8)
+            Button {
+                showManageTransactions = true
+            } label: {
+                AppIcon(name: .search, size: 20, lineWidth: 2, color: Color(hex: "A0A0A5"))
+                    .frame(width: 36, height: 36)
+            }
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+            .accessibilityLabel("Управлять операциями")
+        }
+    }
+
+    private func transactionsList(card: WalletCard) -> some View {
         let transactions = card.transactions
-        let visible = showAllTransactions ? transactions : Array(transactions.prefix(5))
+        let visible = Array(transactions.prefix(6))
 
         return VStack(alignment: .leading, spacing: 0) {
-            Text("ПОСЛЕДНИЕ ОПЕРАЦИИ")
-                .font(.system(size: 13, weight: .semibold))
-                .tracking(0.7)
-                .foregroundColor(Color(hex: "A0A0A5"))
-                .padding(.bottom, 4)
-
             if transactions.isEmpty {
                 Text("Операций пока нет")
-                    .font(.system(size: 17))
+                    .font(.system(size: 16))
                     .foregroundColor(Color(hex: "636368"))
-                    .padding(.vertical, 14)
+                    .padding(.vertical, 18)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                ForEach(visible) { transaction in
-                    TransactionRow(transaction: transaction)
-                    if transaction.id != visible.last?.id {
-                        rowDivider
+                VStack(spacing: 0) {
+                    ForEach(visible) { transaction in
+                        TransactionRow(transaction: transaction)
+                        if transaction.id != visible.last?.id {
+                            rowDivider
+                        }
                     }
                 }
+                .background(Color(hex: "1C1C1E"))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
-                if transactions.count > 5 {
+                if transactions.count > visible.count {
                     Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            showAllTransactions.toggle()
-                        }
+                        showManageTransactions = true
                     } label: {
-                        Text(showAllTransactions ? "Свернуть" : "Показать все")
+                        Text("Все операции")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(Color(hex: "0A84FF"))
                             .padding(.vertical, 12)
                     }
-                    .accessibilityLabel(showAllTransactions ? "Свернуть список операций" : "Показать все операции")
+                    .accessibilityLabel("Открыть все операции")
                 }
             }
         }
@@ -189,59 +219,14 @@ struct CardDetailView: View {
         Rectangle()
             .fill(Color(hex: "262629"))
             .frame(height: 0.5)
-            .padding(.leading, 44)
+            .padding(.leading, 56)
     }
 
-    // MARK: - Нижний тулбар
-
-    private var toolbarView: some View {
-        HStack(spacing: 0) {
-            toolbarButton("creditcard.fill", label: "Оплатить") {
-                onPay()
-            }
-            Spacer(minLength: 0)
-            toolbarButton("list.bullet.rectangle", label: "Операции") {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    showAllTransactions.toggle()
-                }
-            }
-            Spacer(minLength: 0)
-            toolbarButton("ellipsis", label: "Ещё") {
-                onEdit()
-            }
-        }
-        .frame(height: 56)
-        .background(LinearGradient(
-            colors: [Color.white.opacity(0.14), Color.white.opacity(0.08)],
-            startPoint: .top,
-            endPoint: .bottom
-        ))
-        .background(.regularMaterial)
-        .clipShape(Capsule())
-    }
-
-    private func toolbarButton(
-        _ systemName: String,
-        label: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(width: 44, height: 44)
-                .background(Color.white.opacity(0.12))
-                .clipShape(Circle())
-        }
-        .accessibilityLabel(label)
-    }
-
-    // MARK: - Свайп вниз для свёртывания
+    // MARK: - Свайп вниз
 
     private var dragToCollapse: some Gesture {
         DragGesture(minimumDistance: 12, coordinateSpace: .global)
             .onChanged { value in
-                // Реагируем только когда контент прижат к верху — не мешаем скроллу.
                 guard scrollTop >= -2, value.translation.height > 0 else { return }
                 let translation = value.translation.height
                 if translation > 100 {
@@ -263,49 +248,74 @@ struct CardDetailView: View {
     }
 }
 
-// MARK: - Строка операции
+// MARK: - Строка операции (иконка-квадрат как на скриншоте)
 
 struct TransactionRow: View {
     let transaction: Transaction
+    var trailingText: String? = nil
 
     var body: some View {
         HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Color(hex: "2C2C2E"))
-                    .frame(width: 32, height: 32)
-                Image(systemName: symbolName)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.white)
-            }
+            iconTile
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(transaction.merchant)
-                    .font(.system(size: 17))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                     .lineLimit(1)
-                Text(transaction.date.formatted(date: .abbreviated, time: .shortened))
+                Text(subtitle)
                     .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "A0A0A5"))
+                    .foregroundColor(Color(hex: "8E8E93"))
                     .lineLimit(1)
             }
 
             Spacer(minLength: 8)
 
-            Text("− " + transaction.amount.moneyString())
-                .font(.system(size: 17).monospacedDigit())
+            Text(trailingText ?? transaction.amount.moneyString())
+                .font(.system(size: 15, weight: .medium).monospacedDigit())
                 .foregroundColor(.white)
                 .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .minimumScaleFactor(0.75)
+
+            AppIcon(name: .chevronRight, size: 14, lineWidth: 2.2, color: Color(hex: "636368"))
         }
-        .frame(height: 60)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "\(transaction.merchant), \(transaction.amount.moneyString()), \(transaction.date.formatted(date: .abbreviated, time: .shortened))"
-        )
+        .accessibilityLabel(accessibilityLabel)
     }
 
-    private var symbolName: String {
-        UIImage(systemName: transaction.category) != nil ? transaction.category : "cart.fill"
+    private var iconTile: some View {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(iconBackground)
+            .frame(width: 36, height: 36)
+            .overlay {
+                AppIcon(name: iconName, size: 18, lineWidth: 2, color: .white)
+            }
+    }
+
+    private var iconBackground: Color {
+        if transaction.category.contains("person") || transaction.merchant.localizedCaseInsensitiveContains("iphone") {
+            return Color(hex: "30D158")
+        }
+        return Color.black
+    }
+
+    private var iconName: AppIconName {
+        if transaction.category.contains("person") || transaction.merchant.localizedCaseInsensitiveContains("iphone") {
+            return .person
+        }
+        return .bank
+    }
+
+    private var subtitle: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .none
+        return formatter.string(from: transaction.date)
+    }
+
+    private var accessibilityLabel: String {
+        "\(transaction.merchant), \(transaction.amount.moneyString()), \(subtitle)"
     }
 }

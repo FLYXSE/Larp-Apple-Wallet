@@ -6,15 +6,23 @@ struct SettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var amountText: String = ""
+    @State private var appearance: Int = 2
 
     var body: some View {
         VStack(spacing: 0) {
             topBar
 
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
-                    simulationSection
-                    behaviorSection
+                VStack(alignment: .leading, spacing: 22) {
+                    Text("Настройки")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.top, 4)
+
+                    currencySection
+                    motionSection
+                    faceIDSection
+                    appearanceSection
                     aboutSection
                 }
                 .padding(.horizontal, 16)
@@ -39,136 +47,124 @@ struct SettingsSheet: View {
 
     private var topBar: some View {
         HStack(spacing: 12) {
-            Spacer(minLength: 8)
-
-            Text("Настройки")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(.white)
-
-            Spacer(minLength: 8)
-
             Button {
                 dismiss()
             } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 30, height: 30)
-                    .background(Color.white.opacity(0.12))
-                    .clipShape(Circle())
+                Text("Готово")
+                    .font(.system(size: 17))
+                    .foregroundColor(Color(hex: "0A84FF"))
             }
-            .frame(width: 44, height: 44)
+            .frame(height: 44)
             .contentShape(Rectangle())
             .accessibilityLabel("Закрыть настройки")
+
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.top, 8)
     }
 
     // MARK: - Секции
 
-    private var simulationSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("СИМУЛЯЦИЯ ОПЛАТЫ")
+    private var currencySection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            sectionHeader("СУММА")
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Сумма")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color(hex: "A0A0A5"))
-                HStack(spacing: 8) {
-                    TextField("1 000,00", text: $amountText)
+            VStack(alignment: .leading, spacing: 0) {
+                row {
+                    Text("Сумма оплаты")
                         .font(.system(size: 17))
                         .foregroundColor(.white)
+                    Spacer(minLength: 12)
+                    TextField("1 000,00", text: $amountText)
+                        .font(.system(size: 17).monospacedDigit())
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.trailing)
                         .keyboardType(.decimalPad)
-                        .padding(.horizontal, 14)
-                        .frame(height: 46)
-                        .background(Color(hex: "2C2C2E"))
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    Text("₽")
+                        .frame(width: 120)
+                }
+
+                hairline
+
+                row {
+                    Text("Продавец")
+                        .font(.system(size: 17))
+                        .foregroundColor(.white)
+                    Spacer(minLength: 12)
+                    TextField("DEMO STORE", text: $settings.merchant)
                         .font(.system(size: 17))
                         .foregroundColor(Color(hex: "A0A0A5"))
+                        .multilineTextAlignment(.trailing)
+                        .autocorrectionDisabled(true)
+                        .textInputAutocapitalization(.characters)
+                        .frame(maxWidth: 160)
                 }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Сумма демо-оплаты в рублях")
             }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Продавец")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color(hex: "A0A0A5"))
-                TextField("DEMO STORE", text: $settings.merchant)
-                    .font(.system(size: 17))
-                    .foregroundColor(.white)
-                    .autocorrectionDisabled(true)
-                    .textInputAutocapitalization(.characters)
-                    .padding(.horizontal, 14)
-                    .frame(height: 46)
-                    .background(Color(hex: "2C2C2E"))
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            }
+            .cardSurface()
         }
-        .cardSurface()
     }
 
-    private var behaviorSection: some View {
+    private var motionSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             sectionHeader("ПОВЕДЕНИЕ")
-                .padding(.bottom, 4)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Toggle(isOn: $settings.useFaceScan) {
+            VStack(alignment: .leading, spacing: 0) {
+                row {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Сканировать лицо камерой")
+                        Text("Кнопки громкости")
                             .font(.system(size: 17))
                             .foregroundColor(.white)
-                        Text("Стадия Face ID идёт через фронтальную камеру (Vision). При отказе в доступе включается классическая анимация")
+                        Text("Двойное нажатие как аналог боковой кнопки")
                             .font(.system(size: 13))
                             .foregroundColor(Color(hex: "636368"))
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    Spacer(minLength: 12)
+                    Toggle("", isOn: $settings.useVolumeButtons)
+                        .labelsHidden()
                 }
-                .padding(.vertical, 12)
             }
-
-            Rectangle()
-                .fill(Color(hex: "262629"))
-                .frame(height: 0.5)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Toggle(isOn: $settings.requireFaceID) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Требовать успешный Face ID")
-                            .font(.system(size: 17))
-                            .foregroundColor(.white)
-                        Text("Для legacy-пути (глиф/системный Face ID). При камерном сканировании оплата идёт после подтверждения лица в кадре")
-                            .font(.system(size: 13))
-                            .foregroundColor(Color(hex: "636368"))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                .padding(.vertical, 12)
-            }
-
-            Rectangle()
-                .fill(Color(hex: "262629"))
-                .frame(height: 0.5)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Toggle(isOn: $settings.useVolumeButtons) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Аппаратные кнопки громкости")
-                            .font(.system(size: 17))
-                            .foregroundColor(.white)
-                        Text("Двойное нажатие кнопки громкости как аналог боковой кнопки (только на устройстве)")
-                            .font(.system(size: 13))
-                            .foregroundColor(Color(hex: "636368"))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                .padding(.vertical, 12)
-            }
+            .cardSurface()
         }
-        .cardSurface()
+    }
+
+    private var faceIDSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            sectionHeader("FACE ID")
+
+            VStack(alignment: .leading, spacing: 0) {
+                row {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Требовать Face ID")
+                            .font(.system(size: 17))
+                            .foregroundColor(.white)
+                        Text("Оплата идёт через системный Face ID. При включении неудача блокирует платёж")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(hex: "636368"))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 12)
+                    Toggle("", isOn: $settings.requireFaceID)
+                        .labelsHidden()
+                }
+            }
+            .cardSurface()
+        }
+    }
+
+    private var appearanceSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("ОТОБРАЖЕНИЕ")
+
+            Picker("Вид", selection: $appearance) {
+                Text("Система").tag(0)
+                Text("Светлый").tag(1)
+                Text("Тёмный").tag(2)
+            }
+            .pickerStyle(.segmented)
+            .disabled(true)
+            .opacity(0.7)
+        }
     }
 
     private var aboutSection: some View {
@@ -178,19 +174,39 @@ struct SettingsSheet: View {
                 .font(.system(size: 15))
                 .foregroundColor(Color(hex: "A0A0A5"))
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Кошелёк 1.1 · полностью офлайн")
-                .font(.system(size: 13))
-                .foregroundColor(Color(hex: "636368"))
+            HStack(spacing: 6) {
+                AppIcon(name: .refresh, size: 14, lineWidth: 2, color: Color(hex: "0A84FF"))
+                Text("Wallet 1.2 · полностью офлайн")
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "636368"))
+            }
         }
         .cardSurface()
     }
+
+    // MARK: - Помощники
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
             .font(.system(size: 13, weight: .semibold))
             .tracking(0.7)
-            .foregroundColor(Color(hex: "A0A0A5"))
+            .foregroundColor(Color(hex: "8E8E93"))
             .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func row<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var hairline: some View {
+        Rectangle()
+            .fill(Color(hex: "262629"))
+            .frame(height: 0.5)
+            .padding(.leading, 14)
     }
 
     private static func parseDecimal(_ text: String) -> Decimal? {
@@ -207,7 +223,7 @@ struct SettingsSheet: View {
 
 private extension View {
     func cardSurface() -> some View {
-        padding(14)
+        padding(4)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(hex: "1C1C1E"))
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))

@@ -24,8 +24,6 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>Фронтальная камера используется для реального распознавания лица на стадии Face ID (демо-оплата). Кадры обрабатываются на устройстве и никуда не передаются</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Выберите фото для обложки карты</string>
 	<key>UIApplicationSceneManifest</key>
