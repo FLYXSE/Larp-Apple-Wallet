@@ -52,7 +52,7 @@ enum PaymentSound {
     }
 
     private static func wrapPCM16Mono(_ samples: [Int16], sampleRate: Double) -> Data {
-        let byteRate = Int32(sampleRate) * 2 // mono * 16-bit
+        let byteRate = UInt32(sampleRate) * 2 // mono * 16-bit
         let dataSize = UInt32(samples.count * 2)
         let riffSize = 36 + dataSize
         let sampleRateI = UInt32(sampleRate)
