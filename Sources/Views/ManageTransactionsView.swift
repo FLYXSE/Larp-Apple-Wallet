@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Управление операциями карты — в духе «Manage Transactions».
 struct ManageTransactionsView: View {

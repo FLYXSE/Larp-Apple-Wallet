@@ -115,7 +115,7 @@ struct CardForm: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color.black.ignoresSafeArea())
+        .background(Color(uiColor: .systemBackground).ignoresSafeArea())
         .onChange(of: number) { value in
             let formatted = Self.formatNumber(value)
             if formatted != value {
@@ -153,7 +153,7 @@ struct CardForm: View {
 
             Text(existing == nil ? "Новая карта" : "Редактирование")
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
 
             Spacer(minLength: 8)
 
@@ -161,13 +161,13 @@ struct CardForm: View {
                 save()
             }
             .fontWeight(.semibold)
-            .foregroundColor(canSave ? Color(hex: "0A84FF") : Color(hex: "636368"))
+            .foregroundColor(canSave ? Color(hex: "0A84FF") : Color.secondary)
             .disabled(!canSave)
             .accessibilityLabel("Сохранить карту")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.black)
+        .background(Color(uiColor: .systemBackground))
     }
 
     // MARK: - Превью
@@ -580,7 +580,7 @@ private extension View {
     func fieldLabel(_ title: String) -> some View {
         Text(title)
             .font(.system(size: 13, weight: .medium))
-            .foregroundColor(Color(hex: "A0A0A5"))
+            .foregroundColor(.secondary)
     }
 
     func fieldStyle(
@@ -588,20 +588,20 @@ private extension View {
         textAutocapitalization: TextInputAutocapitalization = .sentences
     ) -> some View {
         font(.system(size: 17))
-            .foregroundColor(.white)
+            .foregroundColor(.primary)
             .keyboardType(keyboard)
             .textInputAutocapitalization(textAutocapitalization)
             .disableAutocorrection(true)
             .padding(.horizontal, 14)
             .frame(height: 46)
-            .background(Color(hex: "2C2C2E"))
+            .background(Color(uiColor: .secondarySystemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     func cardSurface() -> some View {
         padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(hex: "1C1C1E"))
+            .background(Color(uiColor: .secondarySystemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }

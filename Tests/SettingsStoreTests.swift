@@ -1,4 +1,5 @@
 import XCTest
+import SwiftUI
 @testable import AppleWalletClone
 
 final class SettingsStoreTests: XCTestCase {

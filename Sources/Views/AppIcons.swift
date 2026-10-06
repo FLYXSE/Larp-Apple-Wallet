@@ -41,7 +41,7 @@ struct AppIcon: View {
         case .check: return "checkmark"
         case .xmark: return "xmark"
         case .pencil: return "pencil"
-        case .sideButton: return "rectangle.portrait.rightthird"
+        case .sideButton: return "rectangle.portrait"
         case .refresh: return "arrow.clockwise"
         case .phone: return "iphone"
         case .contactless: return "wave.3.right"

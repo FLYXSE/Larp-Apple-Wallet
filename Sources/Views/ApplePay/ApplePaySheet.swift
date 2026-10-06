@@ -287,25 +287,24 @@ struct ApplePaySheet: View {
             Spacer(minLength: 0)
             ZStack(alignment: .top) {
                 ForEach(Array(store.cards.prefix(4).enumerated()), id: \.element.id) { index, card in
-                    Rectangle()
-                        .fill(
-                            Group {
-                                if let path = card.coverImagePath, let image = ImageStore.load(relativePath: path) {
-                                    Image(uiImage: image)
-                                } else {
-                                    LinearGradient(
-                                        colors: card.gradientColors.map { Color(hex: $0) },
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                }
-                            }
-                        )
-                        .frame(width: 220, height: 28)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .offset(y: CGFloat(index) * 10)
-                        .opacity(index == 0 ? 0.35 : 0.55)
-                        .zIndex(Double(store.cards.count - index))
+                    Group {
+                        if let path = card.coverImagePath, let image = ImageStore.load(relativePath: path) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()
+                        } else {
+                            LinearGradient(
+                                colors: card.gradientColors.map { Color(hex: $0) },
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        }
+                    }
+                    .frame(width: 220, height: 28)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .offset(y: CGFloat(index) * 10)
+                    .opacity(index == 0 ? 0.35 : 0.55)
+                    .zIndex(Double(store.cards.count - index))
                 }
             }
             .frame(width: 220, height: 70)
